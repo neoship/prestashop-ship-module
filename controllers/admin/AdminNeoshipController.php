@@ -7,8 +7,6 @@ class AdminNeoshipController extends ModuleAdminController {
     CONST SERVICE_URL = 'https://www.neoship.sk/';
     CONST OAUTH_URL   = 'oauth/v2';
 
-    public $errors = array();
-
     public function __construct() {
         $this->bootstrap  = true;
         $this->display    = 'view';
@@ -19,19 +17,26 @@ class AdminNeoshipController extends ModuleAdminController {
         }
     }
 
-    public function renderView() {
-        $packageMat = array();
-        
-        if (Tools::isSubmit('exportOrders')) {
-            $orderData = Tools::getValue('ups-order');
+    public function initToolBarTitle() {
+        $this->toolbar_title[] = $this->l('Export Order to Neoship');
+    }
 
-            $_SESSION['ups-orders'] = $orderData;
+    public function renderView() {
+        $restResponse = null;
+        $packageMat   = array();
+
+        if (Tools::isSubmit('exportOrders') || (isset($_SESSION['oauth']) && !isset($_SESSION['getOauth'])) || (!isset($_SESSION['oauth']) && isset($_SESSION['getOauth'])) || isset($_SESSION['refreshOauth'])) {
+            if (Tools::getValue('ups-order')) {
+                $orderData = Tools::getValue('ups-order');
+
+                $_SESSION['ups-orders'] = $orderData;
+            }
+
+            $restResponse = $this->restAction();
         }
 
-        $this->executeRest();
-
-        $pest  = new PestJSON(self::SERVICE_URL . "publicapi/rest");
-        $boxes = $pest->get('/packagemat/boxes');
+        $rest  = new PestJSON(self::SERVICE_URL . "publicapi/rest");
+        $boxes = $rest->get('/packagemat/boxes');
 
         $packageMat['boxes'] = $boxes;
 
@@ -41,31 +46,34 @@ class AdminNeoshipController extends ModuleAdminController {
         $this->tpl_view_vars['packageMat'] = $packageMat;
         $this->tpl_view_vars['backLink']   = $this->context->link->getAdminLink('AdminOrders');
 
-
         $this->base_tpl_view = 'view.tpl';
+
+        if ($restResponse) {
+            $this->tpl_view_vars['result'] = $restResponse;
+            $this->base_tpl_view           = 'view-result.tpl';
+        }
 
         return parent::renderView();
     }
 
-    public function executeRest() {
-        $orderData    = isset($_SESSION['ups-orders']) ? $_SESSION['ups-orders'] : null;
-        $clientID     = Configuration::get('CLIENT_ID'); //config
-        $clientSecret = Configuration::get('CLIENT_SECRET'); //config
-        $packageMat   = array();
-        $result       = array();
+    private function restAction() {
+        $_SESSION['getOauth'] = true;
+        $orderData            = isset($_SESSION['ups-orders']) ? $_SESSION['ups-orders'] : null;
+        $clientID             = Configuration::get('CLIENT_ID'); //config
+        $clientSecret         = Configuration::get('CLIENT_SECRET'); //config
+        $result               = array();
 
-        if ($clientID && $clientSecret && $orderData) {
-            $redirect     = $this->getRedirectUrl();
-            $code         = Tools::getValue('code');
-            $this->errors = array();
+        if ($clientID && $clientSecret) {
+            $redirect = $this->getRedirectUrl();
+            $code     = Tools::getValue('code');
 
             if ($code) {
 
                 $url      = "/token?client_id=" . $clientID . "&client_secret=" . $clientSecret . "&grant_type=authorization_code&code=" . $code . "&redirect_uri=" . urlencode($redirect);
-                $pestAuth = new Pest(self::SERVICE_URL . self::OAUTH_URL);
+                $restAuth = new Pest(self::SERVICE_URL . self::OAUTH_URL);
 
                 try {
-                    $token                  = json_decode($pestAuth->get($url));
+                    $token                  = json_decode($restAuth->get($url));
                     $oauth["access_token"]  = $token->access_token;
                     $oauth["expires_in"]    = $token->expires_in;
                     $oauth["token_type"]    = $token->token_type;
@@ -73,17 +81,22 @@ class AdminNeoshipController extends ModuleAdminController {
                     $oauth["refresh_token"] = $token->refresh_token;
                     $_SESSION['oauth']      = $oauth;
 
+                    //if exist oauth unset getOauth parameter
+                    unset($_SESSION['getOauth']);
+                    unset($_SESSION['refreshOauth']);
+
                     Tools::redirect($redirect);
                 } catch (Exception $ex) {
                     throw $ex;
                 }
-            } else {
-                $username     = Configuration::get('CLIENT_USERNAME');
-                $statesConfig = array();
-                try {
-                    $oauth = isset($_SESSION['oauth']) ? $_SESSION['oauth'] : null;
 
-                    $data  = array();
+            } else {
+                $oauth    = isset($_SESSION['oauth']) ? $_SESSION['oauth'] : null;
+                $username = Configuration::get('CLIENT_USERNAME');
+
+                try {
+
+                    $data = array();
                     if ($oauth) {
                         $data["access_token"]  = $oauth["access_token"];
                         $data["refresh_token"] = $oauth["refresh_token"];
@@ -91,17 +104,16 @@ class AdminNeoshipController extends ModuleAdminController {
                         $data["expires_in"]    = $oauth["expires_in"];
                     }
 
-                    $pest        = new PestJSON(self::SERVICE_URL . "api/rest");
-                    $user        = $pest->get('/user/', $data);
+                    $rest = new PestJSON(self::SERVICE_URL . "api/rest");
+                    $user = $rest->get('/user/', $data);
 
-                    $kreditlimit = (isset($user['kredit_limit'])) ? $user['kredit_limit'] : 0;
-                    if ($username == $user['username'] && $user['kredit'] >= $kreditlimit) {
-                        $this->user = $user;
-                        $states     = $pest->get('/state/', $data);
-                        $currencies = $pest->get('/currency/', $data);
+                    if ($username == $user['username']) {
+                        $states     = $rest->get('/state/', $data);
+                        $currencies = $rest->get('/currency/', $data);
                         $break      = false;
+
                         foreach ($orderData as $orderID => $package) {
-                            $order = new Order((int)($orderID));
+                            $order           = new Order((int) ($orderID));
                             $deliveryAddress = new Address($order->id_address_delivery);
 
                             $deliveryStreet = trim($deliveryAddress->address1);
@@ -110,6 +122,7 @@ class AdminNeoshipController extends ModuleAdminController {
                                 $str    = $deliveryAddress->city;
                                 $number = $deliveryStreet;
                             } elseif (preg_match("/(.*)\s([a-zA-Z]?[0-9\/]+[a-zA-Z]?)$/", $deliveryStreet, $addressText)) {
+
                                 $str    = (is_numeric($addressText[1])) ? $deliveryAddress->city : $addressText[1];
                                 $str    = trim($str);
                                 $number = (is_numeric($addressText[1])) ? $addressText[1] : isset($addressText[2]) ? $addressText[2] : '';
@@ -123,24 +136,25 @@ class AdminNeoshipController extends ModuleAdminController {
                                 throw new Exception("Invalid street match - " . $deliveryStreet);
                             }
 
-                            $numberArr = explode(" ", trim($number));
+                            $numberArr = explode("/", trim($number));
                             $number    = array_shift($numberArr);
+
                             $numberExt = implode(" ", $numberArr);
                             $numberExt = trim($numberExt);
 
                             $state = null;
-
                             foreach ($states as $s) {
-                                $stateInstance = new State((int)$deliveryAddress->id_state);
-                                if ($s['code'] == $stateInstance->iso_code) {
+                                $country = new Country((int) $deliveryAddress->id_country);
+                                echo $s['code'] . '==' . $country->iso_code . '<br>';
+                                if ($s['code'] == $country->iso_code) {
                                     $state = $s['id'];
                                     break;
                                 }
                             }
-                            
+
                             $currencyID = null;
                             foreach ($currencies as $cur) {
-                                $currency = new Currency((int)$order->id_currency);
+                                $currency = new Currency((int) $order->id_currency);
                                 if ($currency->iso_code == $cur['code']) {
                                     $currencyID = $cur['id'];
                                     break;
@@ -177,35 +191,11 @@ class AdminNeoshipController extends ModuleAdminController {
                                 ),
                             );
 
-//                            if (!empty($packageMat) && in_array($order->getPaymentShippingId(), $packageMat) && isset($package['packagematreciever'])) {
-//                                $packageData['package']['packageMatRecieverName']     = $package['packagematreciever'];
-//                                $packageData['package']['packageMatBox']              = $package['box'];
-//                                $orderAttribute                                       = $order->getAttribute("neoship-packagemat");
-//                                $publicpest                                           = new PestJSON(self::SERVICE_URL . "publicapi/rest");
-//                                $packageMatInfo                                       = $publicpest->get('/packagemat/' . $orderAttribute->getValue());
-//                                $packageData['package']['reciever']['name']           = $packageMatInfo['address']['name'];
-//                                $packageData['package']['reciever']['company']        = $packageMatInfo['address']['company'];
-//                                $packageData['package']['reciever']['street']         = $packageMatInfo['address']['street'];
-//                                $packageData['package']['reciever']['city']           = $packageMatInfo['address']['city'];
-//                                $packageData['package']['reciever']['houseNumber']    = $packageMatInfo['address']['houseNumber'];
-//                                $packageData['package']['reciever']['houseNumberExt'] = $packageMatInfo['address']['houseNumberExt'];
-//                                $packageData['package']['reciever']['zIP']            = $packageMatInfo['virtualzip'];
-//                                $packageData['package']['reciever']['state']          = $packageMatInfo['address']['state']['id'];
-//                            }
-
                             if (isset($package['cod-check'])) {
                                 $packageData['package']['cashOnDeliveryPrice']    = $package['cod'];
                                 $packageData['package']['cashOnDeliveryCurrency'] = $currencyID;
                             }
 
-//                            $insurance_defaut_price = sfConfig::get('mod_nwsordershipadmin_insurance_default_price', false);
-//                            if (isset($package['insurance-check']) || $insurance_defaut_price) {
-//                                $insurance_price = (isset($package['insurance-check']) && $package['insurance-check']) ? $package['insurance'] : $insurance_defaut_price;
-//                                if ($insurance_price) {
-//                                    $packageData['package']['insurance']         = $insurance_price;
-//                                    $packageData['package']['insuranceCurrency'] = $currencyID;
-//                                }
-//                            }
                             if (isset($package['notification']) && !empty($package['notification'])) {
                                 $packageData['package']['notification'] = $package['notification'];
                             }
@@ -246,16 +236,32 @@ class AdminNeoshipController extends ModuleAdminController {
                                         $packageData['package']['insuranceCurrency']      = null;
                                     }
                                 }
+
                                 try {
-                                    $result[$orderID]['result'][$i] = $pest->post('/package/' . '?' . http_build_query($data), $packageData);
+                                    $result[$orderID]['result'][$i] = $rest->post('/package/' . '?' . http_build_query($data), $packageData);
+                                    unset($_SESSION['ups-orders'][$orderID]);
                                 } catch (Pest_Forbidden $ex) {
-                                    $this->errors[] = $ex;
+                                    $this->errors[] = $ex->getMessage();
                                     $break          = true;
                                     break;
                                 } catch (Pest_Json_Decode $ex) {
-                                    $result[$orderID]['result'][$i] = "OK"; // @FIXME: check PEST version to implement follow redirects
+                                    $result[$orderID]['result'][$i] = "OK";
                                 } catch (Exception $ex) {
-                                    $result[$orderID]['exception'][$i] = $ex;
+                                    $message = json_decode($ex->getMessage());
+
+                                    if (isset($message->message)) {
+                                        $result[$orderID]['exception'][$i] = $message->message;
+                                    }
+
+                                    if (isset($message->errors)) {
+                                        foreach ($message->errors as $err) {
+                                            foreach ($err as $msg) {
+                                                if (is_string($msg)) {
+                                                    $result[$orderID]['exception'][$i] = $msg;
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -263,32 +269,27 @@ class AdminNeoshipController extends ModuleAdminController {
                                 break;
                             }
                         }
-                    } elseif ($username == $user['username'] && $user['kredit'] <= $kreditlimit) {
-                        $this->errors[] = new \Exception("Your credit is low to import packages", 403);
                     } elseif ($username != $user['username']) {
                         $_SESSION['oauth'] = null;
                         throw new Pest_ClientError();
-                        //redirect to login if wrong user
                     } else {
-                        $this->errors[] = new \Exception("Other error", 403);
+                        $this->errors[] = $this->l("Error - contact your API provider");
                     }
                 } catch (Pest_ClientError $ex) {
-                    if (in_array($pest->lastStatus(), array('401', '406')) || $username != $user['username']) {
-                        $url = "/auth?client_id=" . $clientID . "&response_type=code&redirect_uri=" . urlencode($redirect);
+                    if (in_array($rest->lastStatus(), array('401', '406')) || $username != $user['username']) {
+                        $url                      = "/auth?client_id=" . $clientID . "&response_type=code&redirect_uri=" . urlencode($redirect);
+                        $_SESSION['refreshOauth'] = true;
                         Tools::redirect(self::SERVICE_URL . self::OAUTH_URL . $url);
                     }
                 } catch (Pest_Exception $ex) {
-                    echo "<pre>";
-                    var_dump($ex);
-                    $this->errors[] = $ex;
-                    die();
+                    $this->errors[] = $ex->getMessage();
                 } catch (Exception $ex) {
                     throw $ex;
                 }
             }
         }
 
-        $this->tpl_view_vars['result'] = $result;
+        return $result;
     }
 
     /**
@@ -296,14 +297,12 @@ class AdminNeoshipController extends ModuleAdminController {
      *
      * @return string
      */
-    private function getRedirectUrl()
-    {
-        $addUrl = '';
-        foreach (Tools::getValue('orders') as $id) {
-            $addUrl .= '&orders[]=' . $id;
-        }
+    private function getRedirectUrl() {
+        $scriptNameItems = explode('/', $_SERVER['SCRIPT_NAME']);
 
-        return _PS_BASE_URL_ .'/admin3706dezat/'. $this->context->link->getAdminLink('AdminNeoship').$addUrl;
+        $prefix = isset($scriptNameItems[1]) ? $scriptNameItems[1] : 'admin';
+
+        return _PS_BASE_URL_ . '/' . $prefix . '/' . $this->context->link->getAdminLink('AdminNeoship');
     }
 
     /**

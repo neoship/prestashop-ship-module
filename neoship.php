@@ -80,7 +80,7 @@ class neoship extends Module {
             'form' => array(
                 'legend' => array(
                     'title' => $this->l('Settings'),
-                    'icon'  => 'icon-cogs'
+                    'icon'  => 'icon-cogs',
                 ),
                 'input'  => array(
                     array(
@@ -88,21 +88,28 @@ class neoship extends Module {
                         'label'    => $this->l('Client ID'),
                         'name'     => 'CLIENT_ID',
                         'required' => true,
-                        'desc'     => $this->l('Fill in the Client ID that you received.'),
+                        'desc'     => $this->l('Fill in the Client ID that you received from your API provider.'),
                     ),
                     array(
                         'type'     => 'text',
                         'label'    => $this->l('Client Secret'),
                         'name'     => 'CLIENT_SECRET',
                         'required' => true,
-                        'desc'     => $this->l('Fill in the Client Secret that you received.'),
+                        'desc'     => $this->l('Fill in the Client Secret that you received from your API provider.'),
                     ),
                     array(
                         'type'     => 'text',
                         'label'    => $this->l('Client Username'),
                         'name'     => 'CLIENT_USERNAME',
                         'required' => true,
-                        'desc'     => $this->l('Fill in the Client Username that you received.'),
+                        'desc'     => $this->l('Fill in the Client Username that you received from your API provider.'),
+                    ),
+                    array(
+                        'type'     => 'text',
+                        'label'    => $this->l('API URL'),
+                        'name'     => 'API_URL',
+                        'readonly' => true,
+                        'desc'     => $this->l('Copy this URL a send to your API provider.'),
                     ),
                 ),
                 'submit' => array(
@@ -139,6 +146,7 @@ class neoship extends Module {
             'CLIENT_ID'       => Tools::getValue('CLIENT_ID', Configuration::get('CLIENT_ID')),
             'CLIENT_SECRET'   => Tools::getValue('CLIENT_SECRET', Configuration::get('CLIENT_SECRET')),
             'CLIENT_USERNAME' => Tools::getValue('CLIENT_USERNAME', Configuration::get('CLIENT_USERNAME')),
+            'API_URL'         => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME'],
         );
     }
 }
