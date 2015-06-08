@@ -241,9 +241,11 @@ class AdminNeoshipController extends ModuleAdminController {
                                     $result[$orderID]['result'][$i] = $rest->post('/package/' . '?' . http_build_query($data), $packageData);
                                     unset($_SESSION['ups-orders'][$orderID]);
                                 } catch (Pest_Forbidden $ex) {
-                                    $this->errors[] = $ex->getMessage();
-                                    $break          = true;
-                                    break;
+                                    $message = json_decode($ex->getMessage());
+
+                                    if (isset($message->message)) {
+                                        $result[$orderID]['exception'][$i] = $message->message;
+                                    }
                                 } catch (Pest_Json_Decode $ex) {
                                     $result[$orderID]['result'][$i] = "OK";
                                 } catch (Exception $ex) {
@@ -263,10 +265,6 @@ class AdminNeoshipController extends ModuleAdminController {
                                         }
                                     }
                                 }
-                            }
-
-                            if ($break) {
-                                break;
                             }
                         }
                     } elseif ($username != $user['username']) {
