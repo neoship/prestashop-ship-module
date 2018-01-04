@@ -12,7 +12,7 @@ class neoship extends Module {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
-        $this->version   = '1.0';
+        $this->version   = '1.0'; // first version working with old prestashop versions (<= 1.6)
         $this->author    = 'Neonus s.r.o.';
 
         parent::__construct();
