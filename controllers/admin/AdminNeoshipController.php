@@ -10,7 +10,7 @@ class AdminNeoshipController extends ModuleAdminController {
     public function __construct() {
         $this->bootstrap  = true;
         $this->display    = 'view';
-        $this->meta_title = $this->l('Upload Order to Neoship');
+        $this->meta_title = Context::getContext()->getTranslator()->trans('Upload Order to Neoship');
         parent::__construct();
         if (!$this->module->active) {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
@@ -114,6 +114,7 @@ class AdminNeoshipController extends ModuleAdminController {
 
                         foreach ($orderData as $orderID => $package) {
                             $order           = new Order((int) ($orderID));
+                            $customer = new Customer((int)$order->id_customer);
                             $deliveryAddress = new Address($order->id_address_delivery);
 
                             $deliveryStreet = trim($deliveryAddress->address1);
@@ -185,7 +186,7 @@ class AdminNeoshipController extends ModuleAdminController {
                                         'houseNumberExt' => $numberExt,
                                         'zIP'            => $deliveryAddress->postcode,
                                         'state'          => $state,
-                                        'email'          => $order->mobile_theme,
+                                        'email'          => $customer->email,
                                         'phone'          => ($deliveryAddress->phone_mobile != '' ? $deliveryAddress->phone_mobile : $deliveryAddress->phone),
                                     ),
                                 ),
@@ -300,7 +301,8 @@ class AdminNeoshipController extends ModuleAdminController {
 
         $prefix = isset($scriptNameItems[1]) ? $scriptNameItems[1] : 'admin';
 
-        return _PS_BASE_URL_ . '/' . $prefix . '/' . $this->context->link->getAdminLink('AdminNeoship');
+//        return _PS_BASE_URL_ . '/' . $prefix . '/' . $this->context->link->getAdminLink('AdminNeoship');
+        return $this->context->link->getAdminLink('AdminNeoship');
     }
 
     /**

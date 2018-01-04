@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+//session_start();
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -12,7 +12,7 @@ class neoship extends Module {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
-        $this->version   = '1.0';
+        $this->version   = '1.1'; //updated for prestashop version 1.7
         $this->author    = 'Neonus s.r.o.';
 
         parent::__construct();

@@ -5,7 +5,7 @@ class AdminOrdersController extends AdminOrdersControllerCore {
     public function __construct() {
         parent::__construct();
 
-        $this->bulk_actions['uploadOrderToNeoship'] = array('text' => $this->l('Export Order to Neoship'), 'icon' => 'icon-upload');
+        $this->bulk_actions['uploadOrderToNeoship'] = array('text' => 'Exportovať do Neoshipu', 'icon' => 'icon-upload');
     }
 
     public function processBulkUploadOrderToNeoship()

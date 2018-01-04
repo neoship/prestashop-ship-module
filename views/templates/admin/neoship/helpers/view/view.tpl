@@ -9,10 +9,10 @@
                     <th rowspan="2">{l s='Date' mod='neoship'}</th>
                     <th rowspan="2">{l s='User' mod='neoship'}</th>
                     <th colspan="3">{l s='Notification' mod='neoship'}</th>
-                    <th rowspan="2">{l s='Cash on delivery' mod='neoship'}</th>
+                    <th rowspan="2" colspan="2">{l s='Cash on delivery' mod='neoship'}</th>
                     <th colspan="2">{l s='Delivery' mod='neoship'}</th>
                     <th rowspan="2">{l s='Parts' mod='neoship'}</th>
-                    <th rowspan="2">{l s='Main package' mod='neoship'}</th>
+                    <th rowspan="2" colspan="2">{l s='Main package' mod='neoship'}</th>
                     <th rowspan="2">{l s='Attachment' mod='neoship'}</th>
                 </tr>
                 <tr>
@@ -38,7 +38,7 @@
                         </td>
                         <td class="notification sms"><input type="checkbox"
                                                             name="ups-order[{$order['id_order']}][notification][sms]"
-                                                            value="sms"/></td>
+                                                            value="sms" checked="checked" /></td>
                         <td class="notification phone"><input type="checkbox"
                                                               name="ups-order[{$order['id_order']}][notification][phone]"
                                                               value="phone"/></td>
@@ -46,7 +46,9 @@
                                                               name="ups-order[{$order['id_order']}][notification][email]"
                                                               value="email" checked="checked"/></td>
                         <td class="cod">
-                            <input type="checkbox" name="ups-order[{$order['id_order']}][cod-check]"/>
+                            <input type="checkbox" name="ups-order[{$order['id_order']}][cod-check]" />
+                        </td>
+                        <td class="cod">
                             <input type="text" name="ups-order[{$order['id_order']}][cod]"
                                    value="{$order['total_paid']}"
                                    size="8" class="tar"/>
@@ -55,6 +57,7 @@
                             <select name="ups-order[{$order['id_order']}][express]">
                                 <option value="">{l s='Standard delivery' mod='neoship'}</option>
                                 <option value="1">{l s='Express 12' mod='neoship'}</option>
+                                <option value="2">{l s='Express 9' mod='neoship'}</option>
                             </select>
                         </td>
                         <td class="delivery saturday">
@@ -65,6 +68,8 @@
                         </td>
                         <td class="mainpackage">
                             <input type="checkbox" name="ups-order[{$order['id_order']}][mainpackage-check]">
+                        </td>
+                        <td class="mainpackage">
                             <input type="text" name="ups-order[{$order['id_order']}][mainpackage]" size="12"/>
                         </td>
                         <td class="attachment">
