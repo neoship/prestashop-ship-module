@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.2" encoding="UTF-8" ?>
 <module>
 	<name>neoship</name>
 	<displayName><![CDATA[Neoship Order Ship]]></displayName>
 	<version><![CDATA[1.0]]></version>
 	<description><![CDATA[]]></description>
-	<author><![CDATA[Neonus s.r.o.]]></author>
+	<author><![CDATA[Neoship s.r.o.]]></author>
 	<tab><![CDATA[others]]></tab>
 	<is_configurable>1</is_configurable>
 	<need_instance>1</need_instance>

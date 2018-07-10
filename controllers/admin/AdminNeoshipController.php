@@ -65,11 +65,11 @@ class AdminNeoshipController extends ModuleAdminController {
 
         if ($clientID && $clientSecret) {
             $redirect = $this->getRedirectUrl();
-            $code     = Tools::getValue('code');
+            $oauth    = isset($_SESSION['oauth']) ? $_SESSION['oauth'] : null;
 
-            if ($code) {
 
-                $url      = "/token?client_id=" . $clientID . "&client_secret=" . $clientSecret . "&grant_type=authorization_code&code=" . $code . "&redirect_uri=" . urlencode($redirect);
+            if ($oauth == null) {
+                $url      = "/token?client_id=" . $clientID . "&client_secret=" . $clientSecret . "&grant_type=client_credentials";
                 $restAuth = new Pest(self::SERVICE_URL . self::OAUTH_URL);
 
                 try {
@@ -78,7 +78,6 @@ class AdminNeoshipController extends ModuleAdminController {
                     $oauth["expires_in"]    = $token->expires_in;
                     $oauth["token_type"]    = $token->token_type;
                     $oauth["scope"]         = $token->scope;
-                    $oauth["refresh_token"] = $token->refresh_token;
                     $_SESSION['oauth']      = $oauth;
 
                     //if exist oauth unset getOauth parameter
@@ -91,18 +90,14 @@ class AdminNeoshipController extends ModuleAdminController {
                 }
 
             } else {
-                $oauth    = isset($_SESSION['oauth']) ? $_SESSION['oauth'] : null;
                 $username = Configuration::get('CLIENT_USERNAME');
 
                 try {
 
                     $data = array();
-                    if ($oauth) {
-                        $data["access_token"]  = $oauth["access_token"];
-                        $data["refresh_token"] = $oauth["refresh_token"];
-                        $data["token_type"]    = $oauth["token_type"];
-                        $data["expires_in"]    = $oauth["expires_in"];
-                    }
+                    $data["access_token"]  = $oauth["access_token"];
+                    $data["token_type"]    = $oauth["token_type"];
+                    $data["expires_in"]    = $oauth["expires_in"];
 
                     $rest = new PestJSON(self::SERVICE_URL . "api/rest");
                     $user = $rest->get('/user/', $data);
@@ -276,9 +271,24 @@ class AdminNeoshipController extends ModuleAdminController {
                     }
                 } catch (Pest_ClientError $ex) {
                     if (in_array($rest->lastStatus(), array('401', '406')) || $username != $user['username']) {
-                        $url                      = "/auth?client_id=" . $clientID . "&response_type=code&redirect_uri=" . urlencode($redirect);
-                        $_SESSION['refreshOauth'] = true;
-                        Tools::redirect(self::SERVICE_URL . self::OAUTH_URL . $url);
+                        $url      = "/token?client_id=" . $clientID . "&client_secret=" . $clientSecret . "&grant_type=client_credentials";
+                        $restAuth = new Pest(self::SERVICE_URL . self::OAUTH_URL);
+
+                        try {
+                            $token                  = json_decode($restAuth->get($url));
+                            $oauth["access_token"]  = $token->access_token;
+                            $oauth["expires_in"]    = $token->expires_in;
+                            $oauth["token_type"]    = $token->token_type;
+                            $oauth["scope"]         = $token->scope;
+                            $_SESSION['oauth']      = $oauth;
+
+                            unset($_SESSION['getOauth']);
+                            unset($_SESSION['refreshOauth']);
+
+                            Tools::redirect($redirect);
+                        } catch (Exception $ex) {
+                            throw $ex;
+                        }
                     }
                 } catch (Pest_Exception $ex) {
                     $this->errors[] = $ex->getMessage();
