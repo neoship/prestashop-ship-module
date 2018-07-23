@@ -205,10 +205,6 @@ class AdminNeoshipController extends ModuleAdminController {
                                 $packageData['package']['saturdayDelivery'] = $satval;
                             }
 
-                            if (isset($package['mainpackage-check'])) {
-                                $packageData['package']['mainPackageNumber'] = $package['mainpackage'];
-                            }
-
                             if (isset($package['reverse'])) {
                                 $reverseval                        = isset($package['reverse']) ? "1" : null;
                                 $packageData['package']['reverse'] = $reverseval;
@@ -221,10 +217,11 @@ class AdminNeoshipController extends ModuleAdminController {
 
                             $result[$orderID]['data'] = $packageData;
                             for ($i = 1; $i <= $package['parts']; $i++) {
-                                $vn                                       = ($package['parts'] > 1) ? $package['variablenumber'] . $i : $package['variablenumber'];
+                                $index = $i-1;
+                                $vn                                       = (($package['parts'] > 1) && ($i != 1)) ? $package['variablenumber'] . $index : $package['variablenumber'];
                                 $packageData['package']['variableNumber'] = $vn;
                                 if (isset($packageData['package']['mainPackageNumber']) || ($package['parts'] > 1 && $i > 1)) {
-                                    $packageData['package']['mainPackageNumber'] = (isset($packageData['package']['mainPackageNumber'])) ? $packageData['package']['mainPackageNumber'] : $package['variablenumber'] . 1;
+                                    $packageData['package']['mainPackageNumber'] = (isset($packageData['package']['mainPackageNumber'])) ? $packageData['package']['mainPackageNumber'] : $package['variablenumber'];
                                     if ($package['parts'] > 1) {
                                         $packageData['package']['cashOnDeliveryPrice']    = null;
                                         $packageData['package']['cashOnDeliveryCurrency'] = null;

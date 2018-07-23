@@ -12,7 +12,6 @@
                     <th rowspan="2" colspan="2">{l s='Cash on delivery' mod='neoship'}</th>
                     <th colspan="2">{l s='Delivery' mod='neoship'}</th>
                     <th rowspan="2">{l s='Parts' mod='neoship'}</th>
-                    <th rowspan="2" colspan="2">{l s='Main package' mod='neoship'}</th>
                     <th rowspan="2">{l s='Attachment' mod='neoship'}</th>
                 </tr>
                 <tr>
@@ -65,12 +64,6 @@
                         </td>
                         <td class="parts">
                             <input type="text" name="ups-order[{$order['id_order']}][parts]" size="2" value="1"/>
-                        </td>
-                        <td class="mainpackage">
-                            <input type="checkbox" name="ups-order[{$order['id_order']}][mainpackage-check]">
-                        </td>
-                        <td class="mainpackage">
-                            <input type="text" name="ups-order[{$order['id_order']}][mainpackage]" size="12"/>
                         </td>
                         <td class="attachment">
                             <input type="checkbox" name="ups-order[{$order['id_order']}][attachment]">
