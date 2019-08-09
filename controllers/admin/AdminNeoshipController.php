@@ -4,7 +4,7 @@ include_once dirname(__FILE__) . '/../../lib/PestJSON.php';
 
 class AdminNeoshipController extends ModuleAdminController {
 
-    CONST SERVICE_URL = 'https://www.neoship.sk/';
+    CONST SERVICE_URL = 'https://api.neoship.sk/';
     CONST OAUTH_URL   = 'oauth/v2';
 
     public function __construct() {
@@ -35,10 +35,7 @@ class AdminNeoshipController extends ModuleAdminController {
             $restResponse = $this->restAction();
         }
 
-        $rest  = new PestJSON(self::SERVICE_URL . "publicapi/rest");
-        $boxes = $rest->get('/packagemat/boxes');
-
-        $packageMat['boxes'] = $boxes;
+        $packageMat['boxes'] = [];
 
         $orderIDs = Tools::getValue('orders');
 
@@ -99,7 +96,7 @@ class AdminNeoshipController extends ModuleAdminController {
                     $data["token_type"]    = $oauth["token_type"];
                     $data["expires_in"]    = $oauth["expires_in"];
 
-                    $rest = new PestJSON(self::SERVICE_URL . "api/rest");
+                    $rest = new PestJSON(self::SERVICE_URL);
                     $user = $rest->get('/user/', $data);
 
                     if ($username == $user['username']) {
