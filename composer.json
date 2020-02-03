@@ -1,0 +1,10 @@
+{
+    "name": "neoship/neoship",
+    "description": "...",
+    "autoload": {
+      "psr-4": {
+        "Neoship\\": "src/"
+      }
+    },
+    "type": "prestashop-module"
+  }

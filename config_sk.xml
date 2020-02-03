@@ -1,12 +1,12 @@
-<?xml version="1.2" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <module>
-	<name>neoship</name>
-	<displayName><![CDATA[Objedn&aacute;vka prepravy Neoship]]></displayName>
-	<version><![CDATA[1.3]]></version>
-	<description><![CDATA[]]></description>
-	<author><![CDATA[Neoship s.r.o.]]></author>
-	<tab><![CDATA[others]]></tab>
-	<is_configurable>1</is_configurable>
-	<need_instance>1</need_instance>
+    <name>neoship</name>
+    <displayName><![CDATA[Objedn&aacute;vka prepravy Neoship]]></displayName>
+    <version><![CDATA[1.1]]></version>
+    <description><![CDATA[]]></description>
+    <author><![CDATA[Neoship s.r.o.]]></author>
+    <tab><![CDATA[others]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>1</need_instance>
 	<limited_countries></limited_countries>
 </module>

@@ -1,0 +1,23 @@
+{% extends 'PrestaShopBundle:Admin:layout.html.twig' %}
+
+{% set layoutTitle = 'Export Order to Neoship'|trans({}, 'Modules.Neoship.view') %}
+
+{% block content %}
+	<div class="row neoship">
+		<div class="col">
+			<div class="card ">
+				<div class="card-body">
+					<div class="row justify-content-between">
+						<div class="col-auto"></div>
+						<div class="col-auto">
+							<a href="{{backLink}}" class="btn btn-secondary">
+								<i class="material-icons">navigate_before</i>
+								{{ 'Back to list'|trans }}
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

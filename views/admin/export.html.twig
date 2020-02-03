@@ -1,0 +1,116 @@
+{% extends 'PrestaShopBundle:Admin:layout.html.twig' %}
+
+{% set layoutTitle = 'Export Order to Neoship'|trans({}, 'Modules.Neoship.view') %}
+
+{% block content %}
+    {{ form_start(form) }}
+		<div class="row neoship">
+			<div class="col">
+				<div class="card ">
+					<div class="card-body">
+						<table class="table">
+							<thead>
+								<tr>
+									<th rowspan="2">{{ 'Number'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2">{{ 'Date'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2">{{ 'User'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th colspan="3">{{ 'Notification'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2" colspan="2">{{ 'Cash on delivery'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2">{{ 'Insurance'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th colspan="2">{{ 'Delivery'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2">{{ 'Parts'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2">{{ 'Attachment'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th rowspan="2">{{ 'Hold delivery'|trans({}, 'Modules.Neoship.view') }}</th>
+								</tr>
+								<tr>
+									<th>{{ 'SMS'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th>{{ 'Phone'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th>{{ 'Email'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th>{{ 'Express'|trans({}, 'Modules.Neoship.view') }}</th>
+									<th>{{ 'Saturday'|trans({}, 'Modules.Neoship.view') }}</th>
+								</tr>
+							</thead>
+							<tbody>
+                                {% for package in form.packages %}
+                                    <tr>
+                                        <td>
+                                            {{ form_row(package.variablenumber) }}
+                                        </td>
+                                        <td class="date">{{orders[package.vars.value.index]['date_add']}}</td>
+                                        <td class="address">
+                                            {{orders[package.vars.value.index]['deliveryName']}}
+                                        </td>
+                                        <td class="notification sms text-center">
+                                            {{ form_widget(package.sms) }}
+                                        </td>
+                                        <td class="notification phone text-center">
+                                            {{ form_widget(package.phone) }}
+                                        </td>
+                                        <td class="notification email text-center">
+                                            {{ form_widget(package.email) }}
+                                        </td>
+                                        <td class="cod text-center">
+                                            {{ form_widget(package.cod) }}
+                                        </td>
+                                        <td class="codprice">
+                                            {{ form_widget(package.codprice) }}
+                                        </td>
+                                        <td class="insurance">
+                                            {{ form_widget(package.insurance) }}
+                                        </td>
+                                        <td class="delivery express">
+                                            {{ form_widget(package.delivery) }}
+                                        </td>
+                                        <td class="delivery saturday text-center">
+                                            {{ form_widget(package.saturday) }}
+                                        </td>
+                                        {% if 'Parcelshop' in orders[package.vars.value.index]['alias'] %}
+                                            <td class="parts d-none">
+                                                {{ form_widget(package.parts) }}
+                                            </td>
+                                            <td>
+                                                <strong>Parcelshop</strong>
+                                            </td>
+                                        {% else %}
+                                            <td class="parts">
+                                                {{ form_widget(package.parts) }}
+                                            </td>
+                                        {% endif %}
+                                        
+                                        <td class="attachment text-center">
+                                            {{ form_widget(package.attachment) }}
+                                        </td>
+                                        <td class="holddelivery text-center">
+                                            {{ form_widget(package.holddelivery) }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+						</table>
+                    </div>
+					<div class="card-footer">
+                        <div class="row justify-content-between">
+                            <div class="col-auto">
+                                <a href="{{backLink}}" class="btn btn-secondary">
+                                    <i class="material-icons">navigate_before</i>
+                                    {{ 'Back to list'|trans }}
+                                </a>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" name="exportOrders" value="1" class="btn btn-primary">
+                                    <i class="material-icons">directions</i>
+                                    {{ 'Export'|trans }}
+                                </button>
+                            </div>
+                        </div>
+					</div>
+				</div>
+			</div>
+        </div>
+    {{ form_end(form) }}
+    <style>
+        .neoship .checkbox label{
+            margin-bottom: 0;
+        }
+    </style>
+{% endblock %}

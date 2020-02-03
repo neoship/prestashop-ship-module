@@ -1,0 +1,8 @@
+services:
+  _defaults:
+    public: true
+
+  neoship.neoshipapi:
+    class: Neoship\Neoshipapi
+    arguments:
+      - "@translator"

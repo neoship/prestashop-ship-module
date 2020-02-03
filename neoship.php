@@ -1,56 +1,222 @@
 <?php
 
-//session_start();
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/src/Neoshipapi.php';
+
 class neoship extends Module {
+
+    const PREFIX = 'neoship_';
+
+    protected $_carriers = array(
+        'SPS Parcelshop' => 'sps_parcelshop',
+    );
 
     public function __construct() {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
         $this->version   = '1.1'; //updated for prestashop version 1.7
-        $this->author    = 'Neonus s.r.o.';
+        $this->author    = 'Neoship s.r.o.';
 
         parent::__construct();
 
         $this->displayName = $this->l('Neoship Order Ship');
+
+        if (!Configuration::get('CLIENT_ID') || !Configuration::get('CLIENT_SECRET')) {
+            $this->warning = $this->l('Login credentials not set!');
+        }
+
+        $this->ps_versions_compliancy = [
+            'min' => '1.7.3.0',
+            'max' => _PS_VERSION_,
+        ];
+    }
+
+    protected function createCarriers()
+    {
+        foreach ($this->_carriers as $key => $value) {
+            $tmp_carrier_id = Configuration::get(self::PREFIX . $value);
+
+            if(!$tmp_carrier_id)
+            {
+                //Create new carrier
+                $carrier = new Carrier();
+                $carrier->name = $key;
+                $carrier->active = TRUE;
+                $carrier->deleted = 0;
+                $carrier->shipping_handling = FALSE;
+                $carrier->range_behavior = 0;
+                $carrier->delay[Configuration::get('PS_LANG_DEFAULT')] = $key;
+                $carrier->shipping_external = TRUE;
+                $carrier->is_module = TRUE;
+                $carrier->external_module_name = $this->name;
+                $carrier->need_range = TRUE;
+        
+                if ($carrier->add()) {
+                    $groups = Group::getGroups(true);
+                    foreach ($groups as $group) {
+                        Db::getInstance()->insert('carrier_group', array(
+                            'id_carrier' => (int) $carrier->id,
+                            'id_group' => (int) $group['id_group']
+                        ));
+                    }
+        
+                    $rangePrice = new RangePrice();
+                    $rangePrice->id_carrier = $carrier->id;
+                    $rangePrice->delimiter1 = '0';
+                    $rangePrice->delimiter2 = '1000000';
+                    $rangePrice->add();
+        
+                    $rangeWeight = new RangeWeight();
+                    $rangeWeight->id_carrier = $carrier->id;
+                    $rangeWeight->delimiter1 = '0';
+                    $rangeWeight->delimiter2 = '1000000';
+                    $rangeWeight->add();
+        
+                    $zones = Zone::getZones(true);
+
+                    foreach ($zones as $z) {
+                        Db::getInstance()->insert('carrier_zone',
+                            array('id_carrier' => (int) $carrier->id, 'id_zone' => (int) $z['id_zone']));
+                        Db::getInstance()->insert('delivery',
+                            array('id_carrier' => $carrier->id, 'id_range_price' => (int) $rangePrice->id, 'id_range_weight' => NULL, 'id_zone' => (int) $z['id_zone'], 'price' => '0'));
+                        Db::getInstance()->insert('delivery',
+                            array('id_carrier' => $carrier->id, 'id_range_price' => NULL, 'id_range_weight' => (int) $rangeWeight->id, 'id_zone' => (int) $z['id_zone'], 'price' => '0'));
+                    }
+        
+                    Configuration::updateValue(self::PREFIX . $value, $carrier->id);
+                    Configuration::updateValue(self::PREFIX . $value . '_reference', $carrier->id);
+                }
+            }
+        }
+    
+        return TRUE;
+    }
+
+    public function getOrderShippingCost($params, $shipping_cost)
+    {
+        return $shipping_cost;
+    }
+    
+    public function getOrderShippingCostExternal($params)
+    {
+        return $this->getOrderShippingCost($params, 10);
+    }
+
+    protected function deleteCarriers()
+    {
+        foreach ($this->_carriers as $value) {
+            $tmp_carrier_id = Configuration::get(self::PREFIX . $value);
+            $carrier = new Carrier($tmp_carrier_id);
+            $carrier->delete();
+        }
+
+        return TRUE;
+    }
+
+    public function isUsingNewTranslationSystem()
+    {
+        return true;
     }
 
     public function install()
     {
-        // Prepare tab
-        $tab = new Tab();
-        $tab->active = 1;
-        $tab->class_name = 'AdminNeoship';
-        $tab->name = array();
-        foreach (Language::getLanguages(true) as $lang)
-            $tab->name[$lang['id_lang']] = 'Neoship';
-        $tab->id_parent = -1;
-        $tab->module = $this->name;
 
-        if (!$tab->add() ||
-            !parent::install() )
+		if (!$this->createCarriers()) { //function for creating new currier
+			return false;
+		}
+
+        if (!parent::install() ||
+            !$this->registerHook('adminAdminOrdersControllerCore') ||
+            !$this->registerHook('displayCarrierExtraContent') ||
+            !$this->registerHook('actionValidateOrder') ||
+			!$this->registerHook('actionValidateStepComplete')
+        ) {
             return false;
+        }
 
         return true;
     }
 
-    public function uninstall()
-    {
-        $id_tab = (int)Tab::getIdFromClassName('AdminNeoship');
-
-        if ($id_tab)
-        {
-            $tab = new Tab($id_tab);
-            $tab->delete();
+    public function hookDisplayCarrierExtraContent($param) {
+        $this->context->controller->addJs(($this->_path).'script.js', 'all'); 
+        if ( $param['carrier']['id'] == Configuration::get(self::PREFIX . 'sps_parcelshop') ) {
+            $this->smarty->assign('parcelshops', \Neoship\Neoshipapi::getParcelShops() );
+			return $this->fetch('module:neoship/views/hook/parcelshop.tpl');
         }
 
-        if (!parent::uninstall())
+    }
+
+    public function hookActionValidateOrder($params)
+    {
+        if ($params['cart']->id_carrier != Configuration::get(self::PREFIX . 'sps_parcelshop')) {
+			return;
+        }
+        $parcelId = Context::getContext()->cookie->neoship_parcelshop_id;
+        $parcelshops = \Neoship\Neoshipapi::getParcelShops(true);
+        $addressInvoice = new Address(intval($params['cart']->id_address_invoice));
+        $address = new Address();
+        $address->alias = 'Parcelshop ' . $parcelshops[$parcelId] ['address']['name'];
+        $address->firstname = $addressInvoice->firstname;
+        $address->lastname = $addressInvoice->lastname;
+        $address->phone = $addressInvoice->phone;
+        $address->company = $parcelshops[$parcelId] ['address']['company'];
+        $address->city = $parcelshops[$parcelId] ['address']['city'];
+        $address->postcode = $parcelshops[$parcelId] ['address']['zip'];
+        $address->address1 = $parcelshops[$parcelId] ['address']['street'];
+        $address->id_country = Country::getByIso( $parcelshops[$parcelId] ['address']['state']['code'] );
+        $address->save();
+        $params['order']->id_address_delivery = $address->id;
+        $params['order']->save();
+    }
+
+    public function hookActionValidateStepComplete($params)
+	{
+		if ($params['step_name'] != 'delivery') {
+			return;
+		}
+
+        if ($params['cart']->id_carrier != Configuration::get(self::PREFIX . 'sps_parcelshop')) {
+			return;
+        }
+        
+		if (!isset($params['request_params']['neoship_parcelshop_id']) || !$params['request_params']['neoship_parcelshop_id']) {
+            $controller           = $this->context->controller;
+			$controller->errors[] = $this->l('Please select a parcelshop!');
+			$params['completed']  = false;
+		} else {
+            $parcelshops = \Neoship\Neoshipapi::getParcelShops();
+            if(!array_key_exists($params['request_params']['neoship_parcelshop_id'], $parcelshops)) {
+                $controller           = $this->context->controller;
+                $controller->errors[] = $this->l('Please select a parcelshop!');
+                $params['completed']  = false;
+                return;
+            }
+            Context::getContext()->cookie->neoship_parcelshop_id = $params['request_params']['neoship_parcelshop_id'];
+            
+			/* Db::getInstance()->insert('lpexpress_terminal_for_cart', array(
+				'id_cart'       => $params['cart']->id,
+				'id_terminal'   => (int)$params['request_params']['lpexpress_terminal_id'],
+			)); */
+		}
+	}
+
+    public function uninstall()
+    {
+        /* if (!$this->deleteCarriers()) {
+			return false;
+		} */
+
+        if (!parent::uninstall() ||
+            !Configuration::deleteByName('CLIENT_ID') ||
+            !Configuration::deleteByName('CLIENT_SECRET')
+        ){
             return false;
+        }
+
         return true;
     }
 
@@ -96,20 +262,6 @@ class neoship extends Module {
                         'name'     => 'CLIENT_SECRET',
                         'required' => true,
                         'desc'     => $this->l('Fill in the Client Secret that you received from your API provider.'),
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('Client Username'),
-                        'name'     => 'CLIENT_USERNAME',
-                        'required' => true,
-                        'desc'     => $this->l('Fill in the Client Username that you received from your API provider.'),
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('API URL'),
-                        'name'     => 'API_URL',
-                        'readonly' => true,
-                        'desc'     => $this->l('Copy this URL a send to your API provider.'),
                     ),
                 ),
                 'submit' => array(

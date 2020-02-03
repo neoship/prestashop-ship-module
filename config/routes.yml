@@ -1,0 +1,31 @@
+export_to_neoship:
+    path: neoship/export
+    methods: [GET,POST]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::export'
+      _legacy_controller: 'NeoshipController'
+      _legacy_link: 'export_to_neoship'
+
+export_to_neoship_result:
+    path: neoship/result
+    methods: [GET]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::result'
+      _legacy_controller: 'NeoshipControllerResult'
+      _legacy_link: 'export_to_neoship_result'
+
+print_sticker_neoship:
+    path: neoship/sticker
+    methods: [GET]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::printSticker'
+      _legacy_controller: 'NeoshipControllerPrintSticker'
+      _legacy_link: 'print_sticker_neoship'
+
+print_acceptance_neoship:
+    path: neoship/acceptance
+    methods: [GET]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::acceptanceProtocol'
+      _legacy_controller: 'NeoshipControllerAcceptanceProtocol'
+      _legacy_link: 'print_acceptance_neoship'
