@@ -9,9 +9,9 @@ class Package
 
     private $sms = true;
 
-    private $phone = true;
+    private $phone = false;
     
-    private $email;
+    private $email = true;
     
     private $cod;
 

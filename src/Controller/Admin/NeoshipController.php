@@ -185,7 +185,7 @@ class NeoshipController extends FrameworkBundleAdminController
                 $status = null;
 				if ( 201 === $value['responseCode'] ) {
                     if ($status == null) {
-                        $status = $this->getState('Exported to neoship');
+                        $status = $this->getState('Exportovaná do Neoshipu');
                     }
                     $history = new \OrderHistory();
                     foreach ($form->getData()->getPackages() as $package) {
