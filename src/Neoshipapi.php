@@ -5,8 +5,8 @@ namespace Neoship;
 use PrestaShop\PrestaShop\Adapter\Configuration;
 use Symfony\Component\Translation\TranslatorInterface;
 		
-define( 'NEOSHIP_API_URL', 'http://api.neoship.loc' );
-define( 'NEOSHIP_TRACKING_URL', 'http://neoship.loc' );
+define( 'NEOSHIP_API_URL', 'https://api.neoship.sk' );
+define( 'NEOSHIP_TRACKING_URL', 'https://neoship.sk' );
 
 class Neoshipapi
 {
