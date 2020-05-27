@@ -38,9 +38,16 @@ class neoship extends Module {
     protected function createCarriers()
     {
         foreach ($this->_carriers as $key => $value) {
-            $tmp_carrier_id = Configuration::get(self::PREFIX . $value);
+            $tmp_carrier = Configuration::get(self::PREFIX . $value);
 
-            if(!$tmp_carrier_id)
+            if ($tmp_carrier) {
+                $tmp_carrier = new Carrier($tmp_carrier);
+                if($tmp_carrier->deleted){
+                    $tmp_carrier = null;
+                }
+            }
+
+            if(!$tmp_carrier)
             {
                 //Create new carrier
                 $carrier = new Carrier();

@@ -1,9 +1,11 @@
 <?php
 
-class AdminOrdersController extends AdminOrdersControllerCore {
-
-    public function __construct() {
+class AdminOrdersController extends AdminOrdersControllerCore 
+{
+    public function __construct() 
+    {
         parent::__construct();
+
         $this->addRowAction('NeoshipTrack');
 
         global $kernel;
