@@ -18,7 +18,7 @@ class neoship extends Module {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
-        $this->version   = '2.0'; //updated for prestashop version 1.7
+        $this->version   = '2.0.1'; //updated for prestashop version 1.7
         $this->author    = 'Neoship s.r.o.';
 
         parent::__construct();
@@ -140,12 +140,20 @@ class neoship extends Module {
             !$this->registerHook('adminAdminOrdersControllerCore') ||
             !$this->registerHook('displayCarrierExtraContent') ||
             !$this->registerHook('actionValidateOrder') ||
+            !$this->registerHook('actionCarrierUpdate') ||
 			!$this->registerHook('actionValidateStepComplete')
         ) {
             return false;
         }
 
         return true;
+    }
+
+    public function hookActionCarrierUpdate($param) {
+        if (!$param['carrier']->deleted && $param['carrier']->external_module_name === 'neoship') {
+            Configuration::updateValue(self::PREFIX . 'sps_parcelshop', $param['carrier']->id);
+            Configuration::updateValue(self::PREFIX . 'sps_parcelshop' . '_reference', $param['carrier']->id);
+        }
     }
 
     public function hookDisplayCarrierExtraContent($param) {
