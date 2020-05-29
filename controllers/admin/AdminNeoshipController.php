@@ -10,7 +10,7 @@ class AdminNeoshipController extends ModuleAdminController {
     public function __construct() {
         $this->bootstrap  = true;
         $this->display    = 'view';
-        $this->meta_title = Context::getContext()->getTranslator()->trans('Upload Order to Neoship');
+        $this->meta_title = $this->l('Upload Order to Neoship');
         parent::__construct();
         if (!$this->module->active) {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
@@ -59,16 +59,15 @@ class AdminNeoshipController extends ModuleAdminController {
         $clientID             = Configuration::get('CLIENT_ID'); //config
         $clientSecret         = Configuration::get('CLIENT_SECRET'); //config
         $result               = array();
-
         if ($clientID && $clientSecret) {
             $redirect = $this->getRedirectUrl();
             $oauth    = isset($_SESSION['oauth']) ? $_SESSION['oauth'] : null;
-
-
+            
+            
             if ($oauth == null) {
                 $url      = "/token?client_id=" . $clientID . "&client_secret=" . $clientSecret . "&grant_type=client_credentials";
                 $restAuth = new Pest(self::SERVICE_URL . self::OAUTH_URL);
-
+                
                 try {
                     $token                  = json_decode($restAuth->get($url));
                     $oauth["access_token"]  = $token->access_token;
@@ -76,26 +75,25 @@ class AdminNeoshipController extends ModuleAdminController {
                     $oauth["token_type"]    = $token->token_type;
                     $oauth["scope"]         = $token->scope;
                     $_SESSION['oauth']      = $oauth;
-
+                    
                     //if exist oauth unset getOauth parameter
                     unset($_SESSION['getOauth']);
                     unset($_SESSION['refreshOauth']);
-
-                    Tools::redirect($redirect);
+                    
+                    return $this->restAction();
                 } catch (Exception $ex) {
                     throw $ex;
                 }
-
+                
             } else {
                 $username = Configuration::get('CLIENT_USERNAME');
-
                 try {
 
                     $data = array();
                     $data["access_token"]  = $oauth["access_token"];
                     $data["token_type"]    = $oauth["token_type"];
                     $data["expires_in"]    = $oauth["expires_in"];
-
+                    
                     $rest = new PestJSON(self::SERVICE_URL);
                     $user = $rest->get('/user/', $data);
 
@@ -138,7 +136,6 @@ class AdminNeoshipController extends ModuleAdminController {
                             $state = null;
                             foreach ($states as $s) {
                                 $country = new Country((int) $deliveryAddress->id_country);
-                                echo $s['code'] . '==' . $country->iso_code . '<br>';
                                 if ($s['code'] == $country->iso_code) {
                                     $state = $s['id'];
                                     break;
@@ -278,7 +275,6 @@ class AdminNeoshipController extends ModuleAdminController {
 
                             unset($_SESSION['getOauth']);
                             unset($_SESSION['refreshOauth']);
-
                             Tools::redirect($redirect);
                         } catch (Exception $ex) {
                             throw $ex;
