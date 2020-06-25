@@ -159,7 +159,7 @@ class AdminNeoshipController extends ModuleAdminController {
                                         'company'        => (isset($user['address']['company'])) ? $user['address']['company'] : null,
                                         'street'         => $user['address']['street'],
                                         'city'           => $user['address']['city'],
-                                        'houseNumber'    => $user['address']['houseNumber'],
+                                        'houseNumber'    => (isset($user['address']['houseNumber'])) ? $user['address']['houseNumber'] : null,
                                         'houseNumberExt' => (isset($user['address']['hoseNumberExt'])) ? $user['address']['houseNumberExt'] : null,
                                         'zIP'            => $user['address']['zip'],
                                         'state'          => $user['address']['state']['id'],
