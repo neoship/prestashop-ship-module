@@ -141,12 +141,20 @@ class Neoshipapi
         $url = NEOSHIP_API_URL . '/package/stickerwitherrors?' . http_build_query($data);
         curl_setopt($this->curl, CURLOPT_URL, $url);
         $response = curl_exec($this->curl);    
+
+        $response = json_decode($response, true);
+        if ( curl_getinfo($this->curl, CURLINFO_HTTP_CODE) != 200 && isset($response['message']) ) {
+            return [
+                'errors' => [$response['message']],
+                'labels' => ''
+            ];
+        }
         
         if (curl_getinfo($this->curl, CURLINFO_HTTP_CODE) != 200){
             throw new \Exception( $this->translator->trans('Something is wrong. Please refresh the page and try again', [], 'Modules.Neoship.Api') );
         }
         
-        return json_decode($response, true);
+        return $response;
 	}
 	
     public function printAcceptanceProtocol($referenceNumber){

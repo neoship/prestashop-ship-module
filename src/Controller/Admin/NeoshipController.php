@@ -41,7 +41,7 @@ class NeoshipController extends FrameworkBundleAdminController
             $api->login();
             $labelsErrors = $api->printGlsSticker( $ref );
 
-            if ( $labelsErrors['labels'] !== '' ) {
+            if ( $labelsErrors['labels'] != '' ) {
                 $this->addFlash('success', '
                     <div id="neoship_download_glssticker_link">
                     </div>
@@ -57,10 +57,11 @@ class NeoshipController extends FrameworkBundleAdminController
                     </script>
                 ');
             }
-
+            
             if ( count( $labelsErrors['errors'] ) > 0 ) {
                 foreach ( $labelsErrors['errors'] as $key => $value ) {
-                    $this->addFlash('error', '<strong>' . $key . '</strong>: ' . implode( ', ', $value) );
+                    $value = \is_array($value) ? implode( ', ', $value) : $value;
+                    $this->addFlash('error', '<strong>' . $key . '</strong>: ' . $value );
                 }
             }
 
