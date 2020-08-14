@@ -29,6 +29,48 @@ class NeoshipController extends FrameworkBundleAdminController
         }
     }
 
+    public function printGlsSticker(Request $request) {
+        $orders = $this->getOrdersByIds( $request->query->get('orders') );
+        $ref = array();
+        foreach ($orders as $order) {
+            $ref[] = $order['reference'];
+        }
+        
+        try {
+            $api = $this->get('neoship.neoshipapi');
+            $api->login();
+            $labelsErrors = $api->printGlsSticker( $ref );
+
+            if ( $labelsErrors['labels'] !== '' ) {
+                $this->addFlash('success', '
+                    <div id="neoship_download_glssticker_link">
+                    </div>
+                    <script>
+                        var link = document.createElement("a");
+                        link.classList.add("btn");
+                        link.classList.add("btn-success");
+                        link.innerHTML = "<strong>Opätovne vytlačiť vygenerované štítky</strong>";
+                        link.download = "stickers.pdf";
+                        link.href = "data:application/pdf;base64,' . $labelsErrors['labels'] . '";
+                        link.click();
+                        document.getElementById("neoship_download_glssticker_link").appendChild(link);
+                    </script>
+                ');
+            }
+
+            if ( count( $labelsErrors['errors'] ) > 0 ) {
+                foreach ( $labelsErrors['errors'] as $key => $value ) {
+                    $this->addFlash('error', '<strong>' . $key . '</strong>: ' . implode( ', ', $value) );
+                }
+            }
+
+        } catch (\Exception $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirect( $this->getAdminLink('export_to_neoship_result', array()) );
+    }
+
     public function acceptanceProtocol(Request $request) {
         $orders = $this->getOrdersByIds( $request->query->get('orders') );
         $ref = array();
@@ -60,6 +102,9 @@ class NeoshipController extends FrameworkBundleAdminController
             }
             $package->setIndex($i);
             $packages->getPackages()->add($package);
+            if ( \in_array( $order['alias'], [ 'gls_parcelshop', 'gls_courier' ] ) ) {
+                $package->setIsGls(true);
+            }
             $i++;
         }
         
@@ -81,6 +126,7 @@ class NeoshipController extends FrameworkBundleAdminController
             }
             
             $packages = array();
+            $glsPackages = array();
             
             foreach ($form->getData()->getPackages() as $package) {
                 $deliveryStreet = trim($orders[$package->getIndex()]['address1']);
@@ -112,13 +158,11 @@ class NeoshipController extends FrameworkBundleAdminController
                 $packageData = array(
                     'package' => array(
                         'variableNumber' => $package->getVariableNumber(),
-                        'express' => $package->getDelivery() ? $package->getDelivery() : null,
                         'insurance'         => $package->getInsurance(),
-                        'insuranceCurrency' => $currencies['EUR'],
                         'sender'         => $user_address,
                         'reciever'       => array(
                             'name'           => $orders[$package->getIndex()]['deliveryName'],
-                            'company'        => $orders[$package->getIndex()]['company'],
+                            //'company'        => $orders[$package->getIndex()]['company'],
                             'street'         => $str,
                             'city'           => $orders[$package->getIndex()]['city'],
                             'houseNumber'    => $number,
@@ -131,7 +175,7 @@ class NeoshipController extends FrameworkBundleAdminController
                     ),
                 );
                 
-                if (strpos($orders[$package->getIndex()]['alias'], 'Parcelshop') !== false) {
+                if ( !$package->getIsGls() && strpos($orders[$package->getIndex()]['alias'], 'Parcelshop') !== false ) {
                     $name = \explode(' ', $orders[$package->getIndex()]['alias']);
                     $packageData['package']['parcelShopRecieverName'] = $orders[$package->getIndex()]['deliveryName'];
                     $packageData['package']['reciever']['name'] = $name[1];
@@ -142,39 +186,68 @@ class NeoshipController extends FrameworkBundleAdminController
 
                 if ($package->getCod()) {
                     $packageData['package']['cashOnDeliveryPrice']    = $package->getCodprice();
-                    $packageData['package']['cashOnDeliveryCurrency'] = $currencies[ $orders[ $package->getIndex() ]['currency'] ];
-                }
-
-                $notification = array();
-				if ( $package->getEmail() ) {
-					$notification[] = 'email';
-				}
-				if ( $package->getSms() ) {
-					$notification[] = 'sms';
-				}
-				if ( $package->getPhone() ) {
-					$notification[] = 'phone';
-                }
-
-				$packageData['package']['notification'] = $notification;
-                
-                if ( $package->getSaturday() ) {
-                    $packageData['package']['saturdayDelivery'] = true;
-                }
-
-                if ( $package->getHolddelivery() ) {
-                    $packageData['package']['holdDelivery'] = true;
-                }
-
-                if ( $package->getAttachment() ) {
-                    $packageData['package']['attachment'] = true;
                 }
                 
-                $packages[] = $packageData;
+                if ( !$package->getIsGls() ) {
+                    $packageData['package']['reciever']['company'] = $orders[$package->getIndex()]['company'];
+					$packageData['package']['insuranceCurrency'] = $currencies['EUR'];
+					$packageData['package']['express'] = $package->getDelivery() ? $package->getDelivery() : null;
+                    
+					$packageData['cashOnDeliveryPayment'] = '';
+                    if ($package->getCod()) {
+                        $packageData['package']['cashOnDeliveryCurrency'] = $currencies[ $orders[ $package->getIndex() ]['currency'] ];
+                    }
+                    
+                    $notification = array();
+                    if ( $package->getEmail() ) {
+                        $notification[] = 'email';
+                    }
+                    if ( $package->getSms() ) {
+                        $notification[] = 'sms';
+                    }
+                    if ( $package->getPhone() ) {
+                        $notification[] = 'phone';
+                    }
+    
+                    $packageData['package']['notification'] = $notification;
+                    
+                    if ( $package->getSaturday() ) {
+                        $packageData['package']['saturdayDelivery'] = true;
+                    }
+    
+                    if ( $package->getHolddelivery() ) {
+                        $packageData['package']['holdDelivery'] = true;
+                    }
+    
+                    if ( $package->getAttachment() ) {
+                        $packageData['package']['attachment'] = true;
+                    }
+
+                    $packages[] = $packageData;
+                }
+                else {
+
+                    if ( $orders[$package->getIndex()]['alias'] == 'gls_parcelshop' ) {
+						$packageData['package']['parcelshopId'] = $orders[$package->getIndex()]['address2'];
+                    }
+                    
+					unset( $packageData['package']['sender']['company'] );
+
+					$glsPackages[] = $packageData;
+                }
             }
             
+            $response = [];
             try {
-                $response = $api->createPackages($packages);
+
+                if ( count( $packages ) ) {
+                    $response = array_merge( $response, $api->createPackages( $packages ) );
+                }
+                
+                if ( count( $glsPackages ) ) {
+                    $response = array_merge( $response, $api->createPackages( $glsPackages, true ) );
+                }
+
             } catch (\Exception $e) {
                 $this->addFlash('error', $e->getMessage());
                 return $this->redirect( $this->getAdminLink('export_to_neoship_result', array()) );
@@ -235,7 +308,7 @@ class NeoshipController extends FrameworkBundleAdminController
 
         $query = '
             SELECT o.id_order, o.reference, o.total_paid, o.date_add, o.module, o.id_address_delivery, CONCAT(a.firstname, " ", a.lastname) AS deliveryName,
-                    a.address1, a.alias, a.city, a.postcode, c.iso_code, a.phone_mobile, a.phone, cm.email, a.company, crc.iso_code as currency
+                    a.address1, a.address2, a.alias, a.city, a.postcode, c.iso_code, a.phone_mobile, a.phone, cm.email, a.company, crc.iso_code as currency
 			FROM `' . _DB_PREFIX_ . 'orders` o
 			LEFT JOIN `' . _DB_PREFIX_ . 'address` a ON o.id_address_delivery = a.id_address
 			LEFT JOIN `' . _DB_PREFIX_ . 'country` c ON a.id_country = c.id_country

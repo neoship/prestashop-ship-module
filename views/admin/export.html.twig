@@ -11,6 +11,7 @@
 						<table class="table">
 							<thead>
 								<tr>
+                                    <th rowspan="2"></th>
 									<th rowspan="2">{{ 'Number'|trans({}, 'Modules.Neoship.view') }}</th>
 									<th rowspan="2">{{ 'Date'|trans({}, 'Modules.Neoship.view') }}</th>
 									<th rowspan="2">{{ 'User'|trans({}, 'Modules.Neoship.view') }}</th>
@@ -32,22 +33,42 @@
 							</thead>
 							<tbody>
                                 {% for package in form.packages %}
+                                    {% set isGls = orders[package.vars.value.index]['alias'] in ['gls_courier', 'gls_parcelshop'] %}
                                     <tr>
                                         <td>
-                                            {{ form_row(package.variablenumber) }}
+                                            {% if isGls %}
+                                                <img src="{{ asset('../modules/neoship/views/img/gls-logo.png') }}" alt="gls">
+                                                {% else %}
+                                                <img src="{{ asset('../modules/neoship/views/img/sps-logo.png') }}" alt="sps">
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form_widget(package.variablenumber) }}
                                         </td>
                                         <td class="date">{{orders[package.vars.value.index]['date_add']}}</td>
                                         <td class="address">
                                             {{orders[package.vars.value.index]['deliveryName']}}
                                         </td>
                                         <td class="notification sms text-center">
-                                            {{ form_widget(package.sms) }}
+                                            {% if isGls %}
+                                                {% do package.sms.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.sms) }}
+                                            {% endif %}
                                         </td>
                                         <td class="notification phone text-center">
-                                            {{ form_widget(package.phone) }}
+                                            {% if isGls %}
+                                                {% do package.phone.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.phone) }}
+                                            {% endif %}
                                         </td>
                                         <td class="notification email text-center">
-                                            {{ form_widget(package.email) }}
+                                            {% if isGls %}
+                                                {% do package.email.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.email) }}
+                                            {% endif %}
                                         </td>
                                         <td class="cod text-center">
                                             {{ form_widget(package.cod) }}
@@ -59,12 +80,20 @@
                                             {{ form_widget(package.insurance) }}
                                         </td>
                                         <td class="delivery express">
-                                            {{ form_widget(package.delivery) }}
+                                            {% if isGls %}
+                                                {% do package.delivery.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.delivery) }}
+                                            {% endif %}
                                         </td>
                                         <td class="delivery saturday text-center">
-                                            {{ form_widget(package.saturday) }}
+                                            {% if isGls %}
+                                                {% do package.saturday.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.saturday) }}
+                                            {% endif %}
                                         </td>
-                                        {% if 'Parcelshop' in orders[package.vars.value.index]['alias'] %}
+                                        {% if 'Parcelshop' in orders[package.vars.value.index]['alias'] or 'gls_parcelshop' == orders[package.vars.value.index]['alias'] %}
                                             <td class="parts d-none">
                                                 {{ form_widget(package.parts) }}
                                             </td>
@@ -78,10 +107,18 @@
                                         {% endif %}
                                         
                                         <td class="attachment text-center">
-                                            {{ form_widget(package.attachment) }}
+                                            {% if isGls %}
+                                                {% do package.attachment.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.attachment) }}
+                                            {% endif %}
                                         </td>
                                         <td class="holddelivery text-center">
-                                            {{ form_widget(package.holddelivery) }}
+                                            {% if isGls %}
+                                                {% do package.holddelivery.setRendered %}
+                                            {% else %}
+                                                {{ form_widget(package.holddelivery) }}
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}

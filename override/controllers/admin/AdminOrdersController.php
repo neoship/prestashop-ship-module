@@ -25,6 +25,7 @@ class AdminOrdersController extends AdminOrdersControllerCore
         $this->bulk_actions['stickersZebra102x152'] = array('text' => 'Tlač štítkov (PDF) 102x152', 'icon' => 'icon-print');
         $this->bulk_actions['stickersZebra80x214'] = array('text' => 'Tlač štítkov (PDF) 80x214', 'icon' => 'icon-print');
         $this->bulk_actions['acceptanceProtocol'] = array('text' => 'Tlač preberacieho protokolu (PDF)', 'icon' => 'icon-print');
+        $this->bulk_actions['printGlsStickers'] = array('text' => 'GLS odoslať dáta prepravcovi a vytlačiť štítky (PDF)', 'icon' => 'icon-print');
     }
 
     public function displayNeoshipTrackLink($token = null, $id, $name = null)
@@ -51,11 +52,17 @@ class AdminOrdersController extends AdminOrdersControllerCore
     {
         $order = new Order(Tools::getValue('id_order'));
         $api = new \Neoship\Neoshipapi();
+        $addressDelivery = new \Address( $order->id_address_delivery );
 
         try {
             $api->login();
             $userID = $api->getUserId();
-            $url = NEOSHIP_TRACKING_URL . '/tracking/packageReference/' . $userID . '/' . $order->reference;
+
+            if ( in_array( $addressDelivery->alias, [ 'gls_parcelshop', 'gls_courier' ] ) ) {
+                $url = NEOSHIP_TRACKING_URL . '/glstracking/packageReference/' . $userID . '/' . $order->reference;
+            } else{
+                $url = NEOSHIP_TRACKING_URL . '/tracking/packageReference/' . $userID . '/' . $order->reference;
+            }
             Tools::redirect($url);
         } catch (Exception $e) {
             unset($e);
@@ -153,5 +160,18 @@ class AdminOrdersController extends AdminOrdersControllerCore
     public function processBulkStickersZebra80x214()
     {
         $this->processBulkPrintStickers(2);
+    }
+
+    public function processBulkPrintGlsStickers()
+    {
+        if (Tools::getValue('orderBox') !== false) {
+            $addOrders = '';
+            foreach (Tools::getValue('orderBox') as $orderID) {
+                $addOrders .= '&orders[]=' . $orderID;
+            }
+            Tools::redirectAdmin($this->context->link->getAdminLink('print_glssticker_neoship') . $addOrders );
+        } else {
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders'));
+        }
     }
 }

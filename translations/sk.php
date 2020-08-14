@@ -45,3 +45,6 @@ $_MODULE['<{neoship}prestashop>api_'.md5('Bad login credentials')] = 'Zlé prihl
 $_MODULE['<{neoship}prestashop>api_'.md5('Something is wrong. Please refresh the page and try again')] = 'Niečo je zle. Prosím obnovte stránku a skúste to znova';
 $_MODULE['<{neoship}prestashop>api_'.md5('You are trying Neoship action on orders which are not imported to neoship')] = 'Snažíte sa vykonať Neoship akciu nad objednávkami, ktoré nie sú vyexportované do Neoshipu.';
 $_MODULE['<{neoship}prestashop>neoship_'.md5('Please select a parcelshop!')] = 'Prosím, vyberte parcelshop!';
+$_MODULE['<{neoship}prestashop>view_'.md5('Insurance')] = 'Poistenie';
+$_MODULE['<{neoship}prestashop>view_'.md5('Export Order to Neoship')] = 'Exportovať do Neoshipu';
+$_MODULE['<{neoship}prestashop>view_'.md5('Hold delivery')] = 'Pozdržať expedovanie';

@@ -12,13 +12,15 @@ class neoship extends Module {
 
     protected $_carriers = array(
         'SPS Parcelshop' => 'sps_parcelshop',
+        'Gls Parcelshop' => 'gls_parcelshop',
+        'Gls Kuriér' => 'gls_courier',
     );
 
     public function __construct() {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
-        $this->version   = '2.0.1'; //updated for prestashop version 1.7
+        $this->version   = '2.1.0';
         $this->author    = 'Neoship s.r.o.';
 
         parent::__construct();
@@ -52,7 +54,7 @@ class neoship extends Module {
                 //Create new carrier
                 $carrier = new Carrier();
                 $carrier->name = $key;
-                $carrier->active = TRUE;
+                $carrier->active = FALSE;
                 $carrier->deleted = 0;
                 $carrier->shipping_handling = FALSE;
                 $carrier->range_behavior = 0;
@@ -95,7 +97,6 @@ class neoship extends Module {
                     }
         
                     Configuration::updateValue(self::PREFIX . $value, $carrier->id);
-                    Configuration::updateValue(self::PREFIX . $value . '_reference', $carrier->id);
                 }
             }
         }
@@ -150,42 +151,76 @@ class neoship extends Module {
     }
 
     public function hookActionCarrierUpdate($param) {
-        if (!$param['carrier']->deleted && $param['carrier']->external_module_name === 'neoship') {
-            Configuration::updateValue(self::PREFIX . 'sps_parcelshop', $param['carrier']->id);
-            Configuration::updateValue(self::PREFIX . 'sps_parcelshop' . '_reference', $param['carrier']->id);
-        }
+        if ( (int)($param['id_carrier']) == (int)(Configuration::get(self::PREFIX . 'sps_parcelshop')) )
+            Configuration::updateValue(self::PREFIX . 'sps_parcelshop', (int)($param['carrier']->id));
+        if ( (int)($param['id_carrier']) == (int)(Configuration::get(self::PREFIX . 'gls_parcelshop')) )
+            Configuration::updateValue(self::PREFIX . 'gls_parcelshop', (int)($param['carrier']->id));
+        if ( (int)($param['id_carrier']) == (int)(Configuration::get(self::PREFIX . 'gls_courier')) )
+            Configuration::updateValue(self::PREFIX . 'gls_courier', (int)($param['carrier']->id));
     }
 
     public function hookDisplayCarrierExtraContent($param) {
         $this->context->controller->addJs(($this->_path).'script.js', 'all'); 
         if ( $param['carrier']['id'] == Configuration::get(self::PREFIX . 'sps_parcelshop') ) {
             $this->smarty->assign('parcelshops', \Neoship\Neoshipapi::getParcelShops() );
+            $this->smarty->assign('parcelshop_id', 'neoship_parcelshop_id' );
 			return $this->fetch('module:neoship/views/hook/parcelshop.tpl');
         }
-
+        if ( $param['carrier']['id'] == Configuration::get(self::PREFIX . 'gls_parcelshop') ) {
+            $this->smarty->assign( 'parcelshops', \Neoship\Neoshipapi::getGlsParcelShops() );
+            $this->smarty->assign('parcelshop_id', 'neoship_glsparcelshop_id' );
+			return $this->fetch('module:neoship/views/hook/parcelshop.tpl');
+        }
     }
 
     public function hookActionValidateOrder($params)
     {
-        if ($params['cart']->id_carrier != Configuration::get(self::PREFIX . 'sps_parcelshop')) {
-			return;
+        if ($params['cart']->id_carrier == Configuration::get(self::PREFIX . 'sps_parcelshop')) {
+            $parcelId = Context::getContext()->cookie->neoship_parcelshop_id;
+            $parcelshops = \Neoship\Neoshipapi::getParcelShops(true);
+            $addressInvoice = new Address(intval($params['cart']->id_address_invoice));
+            $address = new Address();
+            $address->alias = 'Parcelshop ' . $parcelshops[$parcelId] ['address']['name'];
+            $address->firstname = $addressInvoice->firstname;
+            $address->lastname = $addressInvoice->lastname;
+            $address->phone = $addressInvoice->phone;
+            $address->company = $parcelshops[$parcelId] ['address']['company'];
+            $address->city = $parcelshops[$parcelId] ['address']['city'];
+            $address->postcode = $parcelshops[$parcelId] ['address']['zip'];
+            $address->address1 = $parcelshops[$parcelId] ['address']['street'];
+            $address->id_country = Country::getByIso( $parcelshops[$parcelId] ['address']['state']['code'] );
+            $address->save();
+            $params['order']->id_address_delivery = $address->id;
+            $params['order']->save();
         }
-        $parcelId = Context::getContext()->cookie->neoship_parcelshop_id;
-        $parcelshops = \Neoship\Neoshipapi::getParcelShops(true);
-        $addressInvoice = new Address(intval($params['cart']->id_address_invoice));
-        $address = new Address();
-        $address->alias = 'Parcelshop ' . $parcelshops[$parcelId] ['address']['name'];
-        $address->firstname = $addressInvoice->firstname;
-        $address->lastname = $addressInvoice->lastname;
-        $address->phone = $addressInvoice->phone;
-        $address->company = $parcelshops[$parcelId] ['address']['company'];
-        $address->city = $parcelshops[$parcelId] ['address']['city'];
-        $address->postcode = $parcelshops[$parcelId] ['address']['zip'];
-        $address->address1 = $parcelshops[$parcelId] ['address']['street'];
-        $address->id_country = Country::getByIso( $parcelshops[$parcelId] ['address']['state']['code'] );
-        $address->save();
-        $params['order']->id_address_delivery = $address->id;
-        $params['order']->save();
+
+        if ($params['cart']->id_carrier == Configuration::get(self::PREFIX . 'gls_parcelshop')) {
+            $parcelId = Context::getContext()->cookie->neoship_glsparcelshop_id;
+            $parcelshops = \Neoship\Neoshipapi::getGlsParcelShops(true);
+            $addressInvoice = new Address(intval($params['cart']->id_address_invoice));
+            $address = new Address();
+            $address->alias = 'gls_parcelshop';
+            $address->firstname = $addressInvoice->firstname;
+            $address->lastname = $addressInvoice->lastname;
+            $address->phone = $addressInvoice->phone;
+            $address->company = $parcelshops[$parcelId]['name'];
+            $address->city = $parcelshops[$parcelId]['cityName'];
+            $address->postcode = $parcelshops[$parcelId]['zipCode'];
+            $address->address1 = $parcelshops[$parcelId]['address'];
+            $address->address2 = $parcelshops[$parcelId]['parcelShopId'];
+            $address->id_country = Country::getByIso( $parcelshops[$parcelId] ['ctrCode'] );
+            $address->save();
+            $params['order']->id_address_delivery = $address->id;
+            $params['order']->save();
+        }
+
+        if ($params['cart']->id_carrier == Configuration::get(self::PREFIX . 'gls_courier')) {
+            $addressInvoice = new Address(intval($params['cart']->id_address_invoice));
+            $addressInvoice->alias = 'gls_courier';
+            $addressInvoice->save();
+            $params['order']->id_address_delivery = $addressInvoice->id;
+            $params['order']->save();
+        }
     }
 
     public function hookActionValidateStepComplete($params)
@@ -194,29 +229,39 @@ class neoship extends Module {
 			return;
 		}
 
-        if ($params['cart']->id_carrier != Configuration::get(self::PREFIX . 'sps_parcelshop')) {
-			return;
-        }
-        
-		if (!isset($params['request_params']['neoship_parcelshop_id']) || !$params['request_params']['neoship_parcelshop_id']) {
-            $controller           = $this->context->controller;
-			$controller->errors[] = $this->l('Please select a parcelshop!');
-			$params['completed']  = false;
-		} else {
-            $parcelshops = \Neoship\Neoshipapi::getParcelShops();
-            if(!array_key_exists($params['request_params']['neoship_parcelshop_id'], $parcelshops)) {
+        if ($params['cart']->id_carrier == Configuration::get(self::PREFIX . 'sps_parcelshop')) {
+            if (!isset($params['request_params']['neoship_parcelshop_id']) || !$params['request_params']['neoship_parcelshop_id']) {
                 $controller           = $this->context->controller;
                 $controller->errors[] = $this->l('Please select a parcelshop!');
                 $params['completed']  = false;
-                return;
+            } else {
+                $parcelshops = \Neoship\Neoshipapi::getParcelShops();
+                if(!array_key_exists($params['request_params']['neoship_parcelshop_id'], $parcelshops)) {
+                    $controller           = $this->context->controller;
+                    $controller->errors[] = $this->l('Please select a parcelshop!');
+                    $params['completed']  = false;
+                    return;
+                }
+                Context::getContext()->cookie->neoship_parcelshop_id = $params['request_params']['neoship_parcelshop_id'];
             }
-            Context::getContext()->cookie->neoship_parcelshop_id = $params['request_params']['neoship_parcelshop_id'];
-            
-			/* Db::getInstance()->insert('lpexpress_terminal_for_cart', array(
-				'id_cart'       => $params['cart']->id,
-				'id_terminal'   => (int)$params['request_params']['lpexpress_terminal_id'],
-			)); */
-		}
+        }
+
+        if ($params['cart']->id_carrier == Configuration::get(self::PREFIX . 'gls_parcelshop')) {
+            if (!isset($params['request_params']['neoship_glsparcelshop_id']) || !$params['request_params']['neoship_glsparcelshop_id']) {
+                $controller           = $this->context->controller;
+                $controller->errors[] = $this->l('Please select a parcelshop!');
+                $params['completed']  = false;
+            } else {
+                $parcelshops = \Neoship\Neoshipapi::getGlsParcelShops();
+                if(!array_key_exists($params['request_params']['neoship_glsparcelshop_id'], $parcelshops)) {
+                    $controller           = $this->context->controller;
+                    $controller->errors[] = $this->l('Please select a parcelshop!');
+                    $params['completed']  = false;
+                    return;
+                }
+                Context::getContext()->cookie->neoship_glsparcelshop_id = $params['request_params']['neoship_glsparcelshop_id'];
+            }
+        }
 	}
 
     public function uninstall()
