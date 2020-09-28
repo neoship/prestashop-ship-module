@@ -94,8 +94,8 @@ class Neoshipapi
         return $stateIdsByCode;
 	}
 	
-    public function createPackages($packages){
-        $url = NEOSHIP_API_URL . '/package/bulk?' . http_build_query($this->accessData);
+    public function createPackages($packages, $gls = false){
+        $url = NEOSHIP_API_URL . '/package/bulk?' . ($gls ? 'gls=1&' : '') . http_build_query($this->accessData);
         curl_setopt($this->curl, CURLOPT_URL, $url);   
         curl_setopt($this->curl, CURLOPT_POST, 1);                                                              
         curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
@@ -133,6 +133,28 @@ class Neoshipapi
         curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 0); 
         $this->handlePdf('sticker'.$template);
+	}
+
+    public function printGlsSticker($referenceNumber){
+        $data['ref'] = $referenceNumber;
+        $data = (object) array_merge((array) $data, (array) $this->accessData);
+        $url = NEOSHIP_API_URL . '/package/stickerwitherrors?' . http_build_query($data);
+        curl_setopt($this->curl, CURLOPT_URL, $url);
+        $response = curl_exec($this->curl);    
+
+        $response = json_decode($response, true);
+        if ( curl_getinfo($this->curl, CURLINFO_HTTP_CODE) != 200 && isset($response['message']) ) {
+            return [
+                'errors' => [$response['message']],
+                'labels' => ''
+            ];
+        }
+        
+        if (curl_getinfo($this->curl, CURLINFO_HTTP_CODE) != 200){
+            throw new \Exception( $this->translator->trans('Something is wrong. Please refresh the page and try again', [], 'Modules.Neoship.Api') );
+        }
+        
+        return $response;
 	}
 	
     public function printAcceptanceProtocol($referenceNumber){
@@ -184,6 +206,33 @@ class Neoshipapi
                 $parcelShops[$parcelshop['id']] = $parcelshop['address']['city'].', '.$parcelshop['address']['company'];
             }
         }
+        return $parcelShops;
+    }
+	
+    static public function getGlsParcelShops($all = false){
+        $url = NEOSHIP_API_URL . '/public/glsparcelshop/';
+
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        $response = curl_exec($curl);
+        
+        if (curl_getinfo($curl, CURLINFO_HTTP_CODE) != 200){
+            throw new \Exception( 'Parcelshop load problem' );
+        }
+        
+        $parcelshops = json_decode($response, true);
+
+        $parcelShops = [];
+        foreach ($parcelshops as $parcelshop) {
+            if($all){
+                $parcelShops[$parcelshop['parcelShopId']] = $parcelshop;
+            }
+            else{
+                $parcelShops[$parcelshop['parcelShopId']] = $parcelshop['cityName'] . ', ' . $parcelshop['name'];
+            }
+        }
+
         return $parcelShops;
     }
 }

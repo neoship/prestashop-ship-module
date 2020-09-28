@@ -27,7 +27,9 @@ class Package
 
     private $holddelivery;
 
-    private $insurance = 1000;
+    private $insurance = 0;
+
+    private $isGls = false;
 
     /**
      * Get the value of variableNumber
@@ -285,6 +287,26 @@ class Package
     public function setInsurance($insurance)
     {
         $this->insurance = $insurance;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of isGls
+     */ 
+    public function getIsGls()
+    {
+        return $this->isGls;
+    }
+
+    /**
+     * Set the value of isGls
+     *
+     * @return  self
+     */ 
+    public function setIsGls($isGls)
+    {
+        $this->isGls = $isGls;
 
         return $this;
     }

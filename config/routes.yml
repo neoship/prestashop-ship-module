@@ -29,3 +29,11 @@ print_acceptance_neoship:
       _controller: 'Neoship\Controller\Admin\NeoshipController::acceptanceProtocol'
       _legacy_controller: 'NeoshipControllerAcceptanceProtocol'
       _legacy_link: 'print_acceptance_neoship'
+
+print_glssticker_neoship:
+    path: neoship/glssticker
+    methods: [GET]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::printGlsSticker'
+      _legacy_controller: 'NeoshipControllerPrintGlsSticker'
+      _legacy_link: 'print_glssticker_neoship'
