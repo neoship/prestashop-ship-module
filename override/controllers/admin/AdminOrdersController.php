@@ -1,4 +1,5 @@
 <?php
+require_once(_PS_MODULE_DIR_.'neoship/src/Neoshipapi.php'); 
 
 class AdminOrdersController extends AdminOrdersControllerCore 
 {
@@ -8,8 +9,7 @@ class AdminOrdersController extends AdminOrdersControllerCore
 
         $this->addRowAction('NeoshipTrack');
 
-        global $kernel;
-        $api = $kernel->getContainer()->get('neoship.neoshipapi');
+        $api = new Neoship\Neoshipapi();
 
         $credit = 0;
         
