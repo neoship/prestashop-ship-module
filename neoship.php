@@ -12,7 +12,7 @@ class neoship extends Module {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
-        $this->version   = '1.1'; //updated for prestashop version 1.7
+        $this->version   = '1.5';
         $this->author    = 'Neonus s.r.o.';
 
         parent::__construct();
@@ -103,13 +103,6 @@ class neoship extends Module {
                         'name'     => 'CLIENT_USERNAME',
                         'required' => true,
                         'desc'     => $this->l('Fill in the Client Username that you received from your API provider.'),
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('API URL'),
-                        'name'     => 'API_URL',
-                        'readonly' => true,
-                        'desc'     => $this->l('Copy this URL a send to your API provider.'),
                     ),
                 ),
                 'submit' => array(

@@ -1,8 +1,9 @@
 <?php
 
-class AdminOrdersController extends AdminOrdersControllerCore {
-
-    public function __construct() {
+class AdminOrdersController extends AdminOrdersControllerCore 
+{
+    public function __construct() 
+    {
         parent::__construct();
 
         $this->bulk_actions['uploadOrderToNeoship'] = array('text' => 'Exportovať do Neoshipu', 'icon' => 'icon-upload');

@@ -101,7 +101,6 @@ class AdminNeoshipController extends ModuleAdminController {
 
                     if ($username == $user['username']) {
                         $states     = $rest->get('/state/', $data);
-                        $currencies = $rest->get('/currency/', $data);
                         $break      = false;
 
                         foreach ($orderData as $orderID => $package) {
@@ -138,18 +137,8 @@ class AdminNeoshipController extends ModuleAdminController {
                             $state = null;
                             foreach ($states as $s) {
                                 $country = new Country((int) $deliveryAddress->id_country);
-                                echo $s['code'] . '==' . $country->iso_code . '<br>';
                                 if ($s['code'] == $country->iso_code) {
                                     $state = $s['id'];
-                                    break;
-                                }
-                            }
-
-                            $currencyID = null;
-                            foreach ($currencies as $cur) {
-                                $currency = new Currency((int) $order->id_currency);
-                                if ($currency->iso_code == $cur['code']) {
-                                    $currencyID = $cur['id'];
                                     break;
                                 }
                             }
@@ -159,7 +148,6 @@ class AdminNeoshipController extends ModuleAdminController {
                                     'variableNumber' => $package['variablenumber'],
                                     'sender'         => array(
                                         'name'           => $user['address']['name'],
-                                        'company'        => (isset($user['address']['company'])) ? $user['address']['company'] : null,
                                         'street'         => $user['address']['street'],
                                         'city'           => $user['address']['city'],
                                         'houseNumber'    => $user['address']['houseNumber'],
@@ -171,7 +159,6 @@ class AdminNeoshipController extends ModuleAdminController {
                                     ),
                                     'reciever'       => array(
                                         'name'           => $deliveryAddress->firstname . ' ' . $deliveryAddress->lastname,
-                                        'company'        => '',
                                         'street'         => $str,
                                         'city'           => $deliveryAddress->city,
                                         'houseNumber'    => $number,
@@ -186,71 +173,34 @@ class AdminNeoshipController extends ModuleAdminController {
 
                             if (isset($package['cod-check'])) {
                                 $packageData['package']['cashOnDeliveryPrice']    = $package['cod'];
-                                $packageData['package']['cashOnDeliveryCurrency'] = $currencyID;
-                            }
-
-                            if (isset($package['notification']) && !empty($package['notification'])) {
-                                $packageData['package']['notification'] = $package['notification'];
-                            }
-
-                            if (isset($package['express'])) {
-                                $packageData['package']['express'] = $package['express'];
-                            }
-
-                            if (isset($package['saturday'])) {
-                                $satval                                     = isset($package['saturday']) ? "1" : null;
-                                $packageData['package']['saturdayDelivery'] = $satval;
-                            }
-
-                            if (isset($package['reverse'])) {
-                                $reverseval                        = isset($package['reverse']) ? "1" : null;
-                                $packageData['package']['reverse'] = $reverseval;
-                            }
-
-                            if (isset($package['attachment'])) {
-                                $attachmentval                        = isset($package['attachment']) ? "1" : null;
-                                $packageData['package']['attachment'] = $attachmentval;
                             }
 
                             $result[$orderID]['data'] = $packageData;
-                            for ($i = 1; $i <= $package['parts']; $i++) {
-                                $index = $i-1;
-                                $vn                                       = (($package['parts'] > 1) && ($i != 1)) ? $package['variablenumber'] . $index : $package['variablenumber'];
-                                $packageData['package']['variableNumber'] = $vn;
-                                if (isset($packageData['package']['mainPackageNumber']) || ($package['parts'] > 1 && $i > 1)) {
-                                    $packageData['package']['mainPackageNumber'] = (isset($packageData['package']['mainPackageNumber'])) ? $packageData['package']['mainPackageNumber'] : $package['variablenumber'];
-                                    if ($package['parts'] > 1) {
-                                        $packageData['package']['cashOnDeliveryPrice']    = null;
-                                        $packageData['package']['cashOnDeliveryCurrency'] = null;
-                                        $packageData['package']['insurance']              = null;
-                                        $packageData['package']['insuranceCurrency']      = null;
-                                    }
+                            
+                            try {
+                                $data['gls'] = true;
+                                $result[$orderID]['result'][0] = $rest->post('/package/' . '?' . http_build_query($data), $packageData);
+                                unset($_SESSION['ups-orders'][$orderID]);
+                            } catch (Pest_Forbidden $ex) {
+                                $message = json_decode($ex->getMessage());
+
+                                if (isset($message->message)) {
+                                    $result[$orderID]['exception'][0] = $message->message;
+                                }
+                            } catch (Pest_Json_Decode $ex) {
+                                $result[$orderID]['result'][0] = "OK";
+                            } catch (Exception $ex) {
+                                $message = json_decode($ex->getMessage());
+
+                                if (isset($message->message)) {
+                                    $result[$orderID]['exception'][0] = $message->message;
                                 }
 
-                                try {
-                                    $result[$orderID]['result'][$i] = $rest->post('/package/' . '?' . http_build_query($data), $packageData);
-                                    unset($_SESSION['ups-orders'][$orderID]);
-                                } catch (Pest_Forbidden $ex) {
-                                    $message = json_decode($ex->getMessage());
-
-                                    if (isset($message->message)) {
-                                        $result[$orderID]['exception'][$i] = $message->message;
-                                    }
-                                } catch (Pest_Json_Decode $ex) {
-                                    $result[$orderID]['result'][$i] = "OK";
-                                } catch (Exception $ex) {
-                                    $message = json_decode($ex->getMessage());
-
-                                    if (isset($message->message)) {
-                                        $result[$orderID]['exception'][$i] = $message->message;
-                                    }
-
-                                    if (isset($message->errors)) {
-                                        foreach ($message->errors as $err) {
-                                            foreach ($err as $msg) {
-                                                if (is_string($msg)) {
-                                                    $result[$orderID]['exception'][$i] = $msg;
-                                                }
+                                if (isset($message->errors)) {
+                                    foreach ($message->errors as $err) {
+                                        foreach ($err as $msg) {
+                                            if (is_string($msg)) {
+                                                $result[$orderID]['exception'][0] = $msg;
                                             }
                                         }
                                     }
