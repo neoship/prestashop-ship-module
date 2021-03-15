@@ -90,12 +90,21 @@ class NeoshipController extends FrameworkBundleAdminController
 
     public function export(Request $request)
     {
-        $orders = $this->getOrdersByIds( $request->query->get('orders') );
+        $ids = $request->request->get('order_orders_bulk', []);
+        if ( $request->request->has('packages') ) {
+            $ids = [];
+            foreach ($request->request->get('packages') as $value) {
+                $ids[] = $value['id'];
+            }
+        }
+
+        $orders = $this->getOrdersByIds( $ids );
         $packages = new Packages();
         
         $i = 0;
         foreach ($orders as $order) {
             $package = new Package();
+            $package->setId($order['id_order']);
             $package->setVariableNumber($order['reference']);
             $package->setCodprice($order['total_paid']);
             if (strpos($order['module'], 'cashondelivery') !== false) {
@@ -111,7 +120,7 @@ class NeoshipController extends FrameworkBundleAdminController
         
         $form = $this->createForm(PackagesFormType::class, $packages);
         $form->handleRequest($request);
-
+      
         if($form->isSubmitted() && $form->isValid())
         {
             $api = $this->get('neoship.neoshipapi');
@@ -300,7 +309,11 @@ class NeoshipController extends FrameworkBundleAdminController
      *
      * @return array Orders
      */
-    private function getOrdersByIds($orderIDs = array()) {
+    private function getOrdersByIds($requestIds = array()) {
+        $orderIDs = array_map(function ($oId) {
+            return (int) $oId;
+        }, $requestIds);
+
         $em = $this->getDoctrine()->getManager();
 
         foreach ($orderIDs as &$id) {

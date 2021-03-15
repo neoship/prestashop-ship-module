@@ -22,8 +22,15 @@ class PackagesFormType extends CommonAbstractType
     {
         $resolver->setDefaults([
             'data_class' => Packages::class,
+            'allow_extra_fields' => true,
         ]);
     }
+
+    public function getBlockPrefix()
+    {
+        return ''; // return an empty string here
+    }
+
 }
 
 

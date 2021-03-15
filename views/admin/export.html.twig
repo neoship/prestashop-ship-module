@@ -8,6 +8,7 @@
 			<div class="col">
 				<div class="card ">
 					<div class="card-body">
+                        {{ form_errors(form) }}
 						<table class="table">
 							<thead>
 								<tr>
@@ -36,6 +37,7 @@
                                     {% set isGls = orders[package.vars.value.index]['alias'] in ['gls_courier', 'gls_parcelshop'] %}
                                     <tr>
                                         <td>
+                                            {{ form_widget(package.id) }}
                                             {% if isGls %}
                                                 <img src="{{ asset('../modules/neoship/views/img/gls-logo.png') }}" alt="gls">
                                                 {% else %}

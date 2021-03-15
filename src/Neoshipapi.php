@@ -5,8 +5,8 @@ namespace Neoship;
 use PrestaShop\PrestaShop\Adapter\Configuration;
 use Symfony\Component\Translation\TranslatorInterface;
 		
-define( 'NEOSHIP_API_URL', 'https://api.neoship.sk' );
-define( 'NEOSHIP_TRACKING_URL', 'https://neoship.sk' );
+define( 'NEOSHIP_API_URL', 'http://api.neoship.loc' );
+define( 'NEOSHIP_TRACKING_URL', 'http://neoship.loc' );
 
 class Neoshipapi
 {
@@ -24,8 +24,10 @@ class Neoshipapi
 	}
 	
     public function login(){
-        
-        $url = NEOSHIP_API_URL . '/oauth/v2/token?client_id='.urlencode(Configuration::get('CLIENT_ID')).'&client_secret='.urlencode(Configuration::get('CLIENT_SECRET')).'&grant_type=client_credentials';
+        $conf = new Configuration();
+        $client_id = $conf->get('CLIENT_ID');
+        $client_secret = $conf->get('CLIENT_SECRET');
+        $url = NEOSHIP_API_URL . '/oauth/v2/token?client_id='.urlencode($client_id).'&client_secret='.urlencode($client_secret).'&grant_type=client_credentials';
         curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1); 
         $response = curl_exec($this->curl);

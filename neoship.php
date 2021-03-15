@@ -1,5 +1,7 @@
 <?php
 
+use PrestaShop\PrestaShop\Core\Grid\Action\Bulk\Type\SubmitBulkAction;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -142,12 +144,36 @@ class neoship extends Module {
             !$this->registerHook('displayCarrierExtraContent') ||
             !$this->registerHook('actionValidateOrder') ||
             !$this->registerHook('actionCarrierUpdate') ||
+            !$this->registerHook('actionOrderGridDefinitionModifier') ||
 			!$this->registerHook('actionValidateStepComplete')
         ) {
             return false;
         }
 
         return true;
+    }
+
+    public function hookActionOrderGridDefinitionModifier(array $params)
+    {
+        $api = new Neoship\Neoshipapi();
+
+        $credit = 0;
+        
+        try {
+            $api->login();
+            $credit = $api->getUserCredit();
+        } catch (Exception $e) {
+            unset($e);
+        }
+        
+        $params['definition']->getBulkActions()->add(
+                (new SubmitBulkAction('export_to_neoship'))
+                    ->setName('Exportovať do Neoshipu ('.$credit.'€)')
+                    ->setOptions([
+                        // in most cases submit action should be implemented by module
+                        'submit_route' => 'export_to_neoship',
+                    ]) 
+            );
     }
 
     public function hookActionCarrierUpdate($param) {
