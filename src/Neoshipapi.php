@@ -5,8 +5,8 @@ namespace Neoship;
 use PrestaShop\PrestaShop\Adapter\Configuration;
 use Symfony\Component\Translation\TranslatorInterface;
 		
-define( 'NEOSHIP_API_URL', 'http://api.neoship.loc' );
-define( 'NEOSHIP_TRACKING_URL', 'http://neoship.loc' );
+define( 'NEOSHIP_API_URL', 'https://api.neoship.sk' );
+define( 'NEOSHIP_TRACKING_URL', 'https://neoship.sk' );
 
 class Neoshipapi
 {
@@ -171,6 +171,7 @@ class Neoshipapi
     private function handlePdf($filename = 'acceptance') {
         header('Cache-Control: public'); 
         header('Content-type: application/pdf');
+        header('Content-Disposition: attachment; filename="'.$filename.'.pdf"');
         $response = curl_exec($this->curl);  
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);   
         /* if (curl_getinfo($this->curl, CURLINFO_HTTP_CODE) != 200){

@@ -165,15 +165,46 @@ class neoship extends Module {
         } catch (Exception $e) {
             unset($e);
         }
+
+        $fields = [
+            [
+                'name' => 'Exportovať do Neoshipu ('.$credit.'€)',
+                'submit_route' => 'export_to_neoship'
+            ],
+            [
+                'name' => 'SPS tlač štítkov (PDF)',
+                'submit_route' => 'print_sticker_neoship'
+            ],
+            [
+                'name' => 'SPS tlač štítkov (PDF) 102x152',
+                'submit_route' => 'print_sticker_neoship_zebra_horizontal'
+            ],
+            [
+                'name' => 'SPS tlač štítkov (PDF) 80x214',
+                'submit_route' => 'print_sticker_neoship_zebra_vertical'
+            ],
+            [
+                'name' => 'SPS tlač preberacieho protokolu (PDF)',
+                'submit_route' => 'print_acceptance_neoship'
+            ],
+            [
+                'name' => 'GLS odoslať dáta prepravcovi a vytlačiť štítky (PDF)',
+                'submit_route' => 'print_glssticker_neoship'
+            ],
+        ];
         
-        $params['definition']->getBulkActions()->add(
-                (new SubmitBulkAction('export_to_neoship'))
-                    ->setName('Exportovať do Neoshipu ('.$credit.'€)')
+        $actions = $params['definition']->getBulkActions();
+        foreach ($fields as $field) {
+            $actions->add(
+                (new SubmitBulkAction($field['submit_route']))
+                    ->setName($field['name'])
                     ->setOptions([
                         // in most cases submit action should be implemented by module
-                        'submit_route' => 'export_to_neoship',
+                        'submit_route' => $field['submit_route'],
                     ]) 
             );
+        }
+
     }
 
     public function hookActionCarrierUpdate($param) {

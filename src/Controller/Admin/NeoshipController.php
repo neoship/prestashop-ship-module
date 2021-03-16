@@ -12,9 +12,18 @@ use Neoship\Service\Neoshipapi;
 
 class NeoshipController extends FrameworkBundleAdminController
 {
+    public function printStickerZebraVertical(Request $request)
+    {
+        return $this->printSticker($request, 1);
+    }
 
-    public function printSticker(Request $request) {
-        $orders = $this->getOrdersByIds( $request->query->get('orders') );
+    public function printStickerZebraHorizontal(Request $request)
+    {
+        return $this->printSticker($request, 2);
+    }
+
+    public function printSticker(Request $request, $printType = 0) {
+        $orders = $this->getOrdersByIds( $request->request->get('order_orders_bulk', []) );
         $ref = array();
         foreach ($orders as $order) {
             $ref[] = $order['reference'];
@@ -22,7 +31,7 @@ class NeoshipController extends FrameworkBundleAdminController
         try {
             $api = $this->get('neoship.neoshipapi');
             $api->login();
-            $user_address = $api->printSticker( intval($request->query->get('printtype')), $ref );
+            $user_address = $api->printSticker( $printType, $ref );
         } catch (\Exception $e) {
             $this->addFlash('error', $e->getMessage());
             return $this->redirect( $this->getAdminLink('export_to_neoship_result', array()) );
@@ -30,7 +39,7 @@ class NeoshipController extends FrameworkBundleAdminController
     }
 
     public function printGlsSticker(Request $request) {
-        $orders = $this->getOrdersByIds( $request->query->get('orders') );
+        $orders = $this->getOrdersByIds( $request->request->get('order_orders_bulk', []) );
         $ref = array();
         foreach ($orders as $order) {
             $ref[] = $order['reference'];
@@ -73,7 +82,7 @@ class NeoshipController extends FrameworkBundleAdminController
     }
 
     public function acceptanceProtocol(Request $request) {
-        $orders = $this->getOrdersByIds( $request->query->get('orders') );
+        $orders = $this->getOrdersByIds( $request->request->get('order_orders_bulk', []) );
         $ref = array();
         foreach ($orders as $order) {
             $ref[] = $order['reference'];

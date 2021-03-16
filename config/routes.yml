@@ -16,15 +16,31 @@ export_to_neoship_result:
 
 print_sticker_neoship:
     path: neoship/sticker
-    methods: [GET]
+    methods: [POST]
     defaults:
       _controller: 'Neoship\Controller\Admin\NeoshipController::printSticker'
       _legacy_controller: 'NeoshipControllerPrintSticker'
       _legacy_link: 'print_sticker_neoship'
 
+print_sticker_neoship_zebra_horizontal:
+    path: neoship/stickerzebrahorizontal
+    methods: [POST]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::printStickerZebraHorizontal'
+      _legacy_controller: 'NeoshipControllerPrintStickerZebraHorizontal'
+      _legacy_link: 'print_sticker_neoship_zebra_horizontal'
+
+print_sticker_neoship_zebra_vertical:
+    path: neoship/stickerzebravertical
+    methods: [POST]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::printStickerZebraVertical'
+      _legacy_controller: 'NeoshipControllerPrintStickerZebraVertical'
+      _legacy_link: 'print_sticker_neoship_zebra_vertical'
+
 print_acceptance_neoship:
     path: neoship/acceptance
-    methods: [GET]
+    methods: [POST]
     defaults:
       _controller: 'Neoship\Controller\Admin\NeoshipController::acceptanceProtocol'
       _legacy_controller: 'NeoshipControllerAcceptanceProtocol'
@@ -32,7 +48,7 @@ print_acceptance_neoship:
 
 print_glssticker_neoship:
     path: neoship/glssticker
-    methods: [GET]
+    methods: [POST]
     defaults:
       _controller: 'Neoship\Controller\Admin\NeoshipController::printGlsSticker'
       _legacy_controller: 'NeoshipControllerPrintGlsSticker'
