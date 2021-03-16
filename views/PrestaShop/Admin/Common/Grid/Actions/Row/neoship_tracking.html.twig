@@ -1,0 +1,16 @@
+{% set route_params = { (action.options.route_param_name) : (record[action.options.route_param_field]) } %}
+{% set extra_route_params = action.options.extra_route_params %}
+
+{% for name, field in extra_route_params %}
+  {% set route_params = route_params|merge({ (name) : (record[field] ?? field) }) %}
+{% endfor %}
+
+<a class="btn tooltip-link js-link-row-action"
+   href="{{ path(action.options.route, route_params ) }}"
+   target="_blank"
+    data-toggle="pstooltip"
+    data-placement="top"
+    data-original-title="Sledovanie"
+>
+    <i class="material-icons">remove_red_eye</i>
+</a>

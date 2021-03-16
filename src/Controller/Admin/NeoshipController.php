@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Neoship\Service\Neoshipapi;
+use OpenSSLCertificateSigningRequest;
 
 class NeoshipController extends FrameworkBundleAdminController
 {
@@ -381,6 +382,29 @@ class NeoshipController extends FrameworkBundleAdminController
             // Update object
             $order_state->add();
             return $order_state;
+        }
+    }
+
+    public function tracking(Request $request)
+    {
+        $orderId = $request->query->get('orderId', null);
+        $order = new \Order($orderId);
+        $api = $this->get('neoship.neoshipapi');
+        $addressDelivery = new \Address( $order->id_address_delivery );
+
+        try {
+            $api->login();
+            $userID = $api->getUserId();
+
+            if ( in_array( $addressDelivery->alias, [ 'gls_parcelshop', 'gls_courier' ] ) ) {
+                $url = NEOSHIP_TRACKING_URL . '/glstracking/packageReference/' . $userID . '/' . $order->reference;
+            } else{
+                $url = NEOSHIP_TRACKING_URL . '/tracking/packageReference/' . $userID . '/' . $order->reference;
+            }
+            return $this->redirect($url);
+        } catch (\Exception $e) {
+            unset($e);
+            return null;
         }
     }
 }

@@ -1,6 +1,11 @@
 <?php
 
 use PrestaShop\PrestaShop\Core\Grid\Action\Bulk\Type\SubmitBulkAction;
+use PrestaShop\PrestaShop\Core\Grid\Action\Row\Type\SubmitRowAction;
+use PrestaShop\PrestaShop\Core\Grid\Action\Row\RowActionCollection;
+use PrestaShop\PrestaShop\Core\Grid\Action\Row\Type\LinkRowAction;
+use PrestaShop\PrestaShop\Core\Grid\Column\Type\Common\ActionColumn;
+use Neoship\Grid\Action\Type\TrackingRowAction;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -204,6 +209,28 @@ class neoship extends Module {
                     ]) 
             );
         }
+
+        $columns = $params['definition']->getColumns();
+        $rowActions = (new RowActionCollection())
+            ->add(
+                (new TrackingRowAction('view'))
+                    ->setName('Sledovať')
+                    ->setIcon('zoom_in')
+                    ->setOptions([
+                        'route' => 'neoship_tracking',
+                        'route_param_name' => 'orderId',
+                        'route_param_field' => 'id_order',
+                    ])
+            )
+        ;;
+
+        $columns
+            ->add((new ActionColumn('neoship_actions'))
+                ->setName('Sledovanie')
+                ->setOptions([
+                    'actions' => $rowActions,
+                ])
+            );
 
     }
 

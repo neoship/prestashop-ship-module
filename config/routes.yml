@@ -53,3 +53,11 @@ print_glssticker_neoship:
       _controller: 'Neoship\Controller\Admin\NeoshipController::printGlsSticker'
       _legacy_controller: 'NeoshipControllerPrintGlsSticker'
       _legacy_link: 'print_glssticker_neoship'
+
+neoship_tracking:
+    path: neoship/tracking
+    methods: [GET]
+    defaults:
+      _controller: 'Neoship\Controller\Admin\NeoshipController::tracking'
+      _legacy_controller: 'NeoshipControllerTracking'
+      _legacy_link: 'neoship_tracking'

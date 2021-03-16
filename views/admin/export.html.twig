@@ -102,6 +102,10 @@
                                             <td>
                                                 <strong>Parcelshop</strong>
                                             </td>
+                                        {% elseif isGls %}
+                                            <td class="parts d-none">
+                                                {{ form_widget(package.parts) }}
+                                            </td>
                                         {% else %}
                                             <td class="parts">
                                                 {{ form_widget(package.parts) }}
