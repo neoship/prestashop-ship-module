@@ -22,7 +22,7 @@ class neoship extends Module {
         $this->name      = 'neoship';
         $this->bootstrap = true;
         $this->tab       = 'others';
-        $this->version   = '2.1.1';
+        $this->version   = '3.0.0';
         $this->author    = 'Neoship s.r.o.';
 
         parent::__construct();
@@ -34,7 +34,7 @@ class neoship extends Module {
         }
 
         $this->ps_versions_compliancy = [
-            'min' => '1.7.3.0',
+            'min' => '1.7.7.0',
             'max' => _PS_VERSION_,
         ];
     }
