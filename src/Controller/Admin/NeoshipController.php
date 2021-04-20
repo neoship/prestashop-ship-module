@@ -166,6 +166,8 @@ class NeoshipController extends FrameworkBundleAdminController
                 } elseif (count(explode(" ", $deliveryStreet)) == 1 || strpos($orders[$package->getIndex()]['alias'], 'Parcelshop') !== false) {
                     $str    = $deliveryStreet;
                     $number = '';
+                } elseif (!empty($deliveryStreet)) {
+                    $str = trim($deliveryStreet);
                 } else {
                     throw new \Exception("Invalid street match - " . $deliveryStreet);
                 }
